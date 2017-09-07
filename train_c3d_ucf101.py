@@ -146,7 +146,7 @@ def run_training():
   if not os.path.exists(model_save_dir):
       os.makedirs(model_save_dir)
   use_pretrained_model = True
-  model_filename = "./models/c3d_ucf_model-10000"
+  model_filename = "./models/c3d_ucf_model-1000"
   #model_filename = ""
   if len(model_filename)!=0:
     start_steps=int(model_filename.strip().split('-')[-1])
@@ -168,16 +168,17 @@ def run_training():
     tower_grads2 = []
     logits = []
     base_lr = 0.0005
-    #opt1 = tf.train.AdamOptimizer(base_lr)
-    #opt2 = tf.train.AdamOptimizer(base_lr*2)
-    opt1 = tf.train.MomentumOptimizer(base_lr,0.9,use_nesterov=True)
-    opt2 = tf.train.MomentumOptimizer(base_lr,0.9,use_nesterov=True)
+    learning_rate = tf.Variable(base_lr,trainable=False)
+    #opt1 = tf.train.AdamOptimizer(learning_rate)
+    #opt2 = tf.train.AdamOptimizer(learning_rate*2)
+    opt1 = tf.train.MomentumOptimizer(learning_rate,0.9,use_nesterov=True)
+    opt2 = tf.train.MomentumOptimizer(learning_rate,0.9,use_nesterov=True)
     for gpu_index in range(0, gpu_num):
       with tf.device('/gpu:%d' % gpu_index):
         with tf.name_scope('%s-%d' % ('ludongwei-pc', gpu_index)) as scope:
           with tf.variable_scope('var_name') as var_scope:
             weights = {
-              'wc0': _variable_on_cpu('wc0', [1, 1, 1, 16,16], tf.constant_initializer(1/16.0)),
+              #'wc0': _variable_on_cpu('wc0', [1, 1, 1, 16,16], tf.constant_initializer(1/16.0)),
               'wc1': _variable_with_weight_decay('wc1', [3, 3, 3, 3, 64], 0.0005),
               'wc2': _variable_with_weight_decay('wc2', [3, 3, 3, 64, 128], 0.0005),
               'wc3a': _variable_with_weight_decay('wc3a', [3, 3, 3, 128, 256], 0.0005),
@@ -188,7 +189,7 @@ def run_training():
               'out': _variable_with_weight_decay('wout', [2048, C3DModel.NUM_CLASSES], 0.0005)
               }
             biases = {
-              'bc0': _variable_with_weight_decay('bc0', [16],0.000),
+              #'bc0': _variable_with_weight_decay('bc0', [16],0.000),
               'bc1': _variable_with_weight_decay('bc1', [64], 0.000),
               'bc2': _variable_with_weight_decay('bc2', [128], 0.000),
               'bc3a': _variable_with_weight_decay('bc3a', [256], 0.000),
@@ -258,39 +259,85 @@ def run_training():
 
     merged = tf.summary.merge_all()
 
+    sess.run(tf.assign(learning_rate,0.0003))
+
     train_writer = tf.summary.FileWriter('./visual_logs/train/attention', sess.graph)
     next_batch_start = -1
+    last_acc = 0
     lines=None
+    epoch = 0
     for step in xrange(start_steps,FLAGS.max_steps):
-      start_time = time.time()
-      train_images, train_labels, next_batch_start, _, _,lines = input_data.read_clip_and_label(
-                      rootdir = 'E:\\dataset\\VIVA_avi_group\\VIVA_avi_part0\\train',
-                      filename='E:\\dataset\\VIVA_avi_group\\VIVA_avi_part0\\gen_train_shuffle.txt',
-                      batch_size=FLAGS.batch_size * gpu_num,
-                      lines=lines,
-                      start_pos=next_batch_start,
-                      num_frames_per_clip=C3DModel.NUM_FRAMES_PER_CLIP,
-                      crop_size=(C3DModel.HEIGHT,C3DModel.WIDTH),
-                      shuffle=False,
-                      phase='TRAIN'
-                      )
-      _,losses,summary = sess.run([train_op,loss,merged], feed_dict={
-                      images_placeholder: train_images,
-                      labels_placeholder: train_labels
-                      })
-      duration = time.time() - start_time
-      print('Step %d: %.3f sec' % (step, duration))
-      print ("loss: " + "{:.4f}".format(losses))
-      # Save a checkpoint and evaluate the model periodically.
-      if (step) % 10 == 0 or (step + 1) == FLAGS.max_steps:
-        if step%1000==0 and step!=0 and step!=start_steps:
-          saver.save(sess, os.path.join(model_save_dir, 'c3d_ucf_model'), global_step=step)
-          print('Model Saved.')
-        print('Training Data Eval:')
+        start_time = time.time()
+
+        train_images, train_labels, next_batch_start, _, _,lines = input_data.read_clip_and_label(
+                        rootdir = 'E:\\dataset\\VIVA_avi_group\\VIVA_avi_part0\\train',
+                        filename='E:\\dataset\\VIVA_avi_group\\VIVA_avi_part0\\gen_train_shuffle.txt',
+                        batch_size=FLAGS.batch_size * gpu_num,
+                        lines=lines,
+                        start_pos=next_batch_start,
+                        num_frames_per_clip=C3DModel.NUM_FRAMES_PER_CLIP,
+                        crop_size=(C3DModel.HEIGHT,C3DModel.WIDTH),
+                        shuffle=False,
+                        phase='TRAIN'
+                        )
+        _,losses,summary = sess.run([train_op,loss,merged], feed_dict={
+                        images_placeholder: train_images,
+                        labels_placeholder: train_labels
+                        })
         train_writer.add_summary(summary, step)
+        duration = time.time() - start_time
+        print('Step %d: %.3f sec' % (step, duration))
+        print ("lr:%f "%sess.run(learning_rate)+"loss: " + "{:.4f}".format(losses*1.0/FLAGS.batch_size))
+        # Save a checkpoint and evaluate the model periodically.
+        if step%1000==0 and step!=0 and step!=start_steps or step+1 == FLAGS.max_steps:
+            saver.save(sess, os.path.join(model_save_dir, 'c3d_ucf_model'), global_step=step)
+            print('Model Saved.')
+            print('Training Data Eval:')
+        if next_batch_start == -1:
+            epoch+=1
+            if epoch%1==0 and epoch!=0:
+                # test
+                test_batch_start = -1
+                sum_acc=0
+                total_num=0
+                while True:
+                    test_lines = None
+                    val_images, val_labels, test_batch_start, _, _,test_lines = input_data.read_clip_and_label(
+                        rootdir='E:\\dataset\\VIVA_avi_group\\VIVA_avi_part0\\val',
+                        filename='E:\\dataset\\VIVA_avi_group\\VIVA_avi_part0\\val.txt',
+                        batch_size=1 * gpu_num,
+                        lines=test_lines,
+                        start_pos=test_batch_start,
+                        num_frames_per_clip=C3DModel.NUM_FRAMES_PER_CLIP,
+                        crop_size=(C3DModel.HEIGHT, C3DModel.WIDTH),
+                        shuffle=False,
+                        phase='TEST'
+                    )
+                    val_images=np.array([val_images[0,:]]*FLAGS.batch_size,dtype=np.float32)
+                    val_labels=np.array([val_labels]*FLAGS.batch_size,dtype=np.float32).ravel()
+                    summary, acc = sess.run(
+                        [merged, accuracy],
+                        feed_dict={
+                            images_placeholder: val_images,
+                            labels_placeholder: val_labels
+                        })
+                    sum_acc+=acc
+                    total_num+=1
+                    if test_batch_start == -1:
+                        acc = sum_acc*1.0/total_num
+                        print('Epoch: %d test accuracy: %f'%(epoch,acc))
+                        break
+                if acc-last_acc<0.01:
+                    learning_rate_value = sess.run(learning_rate) 
+                    learning_rate_value *= 0.8
+                    assign_op = tf.assign(learning_rate,learning_rate_value)
+                    sess.run(assign_op)
+                    print("acc:%f < last_acc*1.1:%f"%(acc,last_acc*1.1))
+                    print("learning_rate changed to %f"%sess.run(learning_rate))
+                last_acc = acc
+    print("Done")
     train_writer.flush()
     train_writer.close()
-  print("done")
 
 def run_testing():
     # Get the sets of images and labels for training, validation, and

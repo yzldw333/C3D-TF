@@ -66,8 +66,16 @@ def get_frames_data(filename, num_frames_per_clip=16,temporal_elastic_deformatio
       #plt.plot(x_test,y_test,linewidth=2)
       #plt.show()
     else:
-      start_index = random.randint(0, len(filenames) - num_frames_per_clip)
-      s_index = [start_index+i for i in range(num_frames_per_clip)]
+      #start_index = random.randint(0, len(filenames) - num_frames_per_clip+1)
+      #s_index = [start_index+i for i in range(num_frames_per_clip)]
+      # average index
+      s_index = []
+      originLength = len(filenames)
+      for i in range(num_frames_per_clip):
+        index = int(i/num_frames_per_clip*originLength)
+        if index>originLength-1:
+          index=originLength-1
+        s_index.append(index)
 
     rotate_angle = 0
     scale = 1
@@ -106,13 +114,14 @@ def get_frames_data(filename, num_frames_per_clip=16,temporal_elastic_deformatio
   return ret_arr, s_index
 
 def read_clip_and_label(rootdir,filename,batch_size, lines=None,start_pos=-1, num_frames_per_clip=16, crop_size=(112,112), shuffle=False,phase='TRAIN'):
-  lines = open(filename,'r')
+  if lines==None:
+    lines = open(filename,'r')
+    lines = list(lines)
   read_dirnames = []
   data = []
   label = []
   batch_index = 0
   next_batch_start = -1
-  lines = list(lines)
   #np_mean = np.load('crop_mean.npy').reshape([num_frames_per_clip, crop_size[0], crop_size[1], 3])
   np_mean = np.ones([num_frames_per_clip,crop_size[0],crop_size[1],3])*128
 
@@ -150,7 +159,7 @@ def read_clip_and_label(rootdir,filename,batch_size, lines=None,start_pos=-1, nu
                                       random_rotate_range=10,
                                       random_scale_range=0.3) # default open temporal elastic deformation
     elif phase == 'TEST':
-      tmp_data, _ = get_frames_data(dirname, num_frames_per_clip,temporal_elastic_deformation=False,random_dropping=False) # default open temporal elastic deformation
+      tmp_data, _ = get_frames_data(dirname, num_frames_per_clip,temporal_elastic_deformation=False,random_dropping=False)
     img_datas = [];
     if(len(tmp_data)!=0):
       for j in range(len(tmp_data)):
@@ -182,5 +191,10 @@ def read_clip_and_label(rootdir,filename,batch_size, lines=None,start_pos=-1, nu
 
 
 if __name__ == '__main__':
-    #get_frames_data(r'E:\dataset\VIVA_avi_part0\VIVA_train\03_01_01',16,True)
+  tmp_data, _ = get_frames_data(r'E:\dataset\VIVA_avi_group\VIVA_avi_part0\train\03_01_01', 16,temporal_elastic_deformation=True) 
+  for e in tmp_data:
+    import cv2
+    cv2.imshow('t',e)
+    cv2.waitKey(0)
+
   pass
