@@ -146,8 +146,8 @@ def run_training():
   if not os.path.exists(model_save_dir):
       os.makedirs(model_save_dir)
   use_pretrained_model = True
-  model_filename = "./models/c3d_ucf_model-1000"
-  #model_filename = ""
+  model_filename = "./models/c3d_ucf_model-5000"
+  model_filename = ""
   if len(model_filename)!=0:
     start_steps=int(model_filename.strip().split('-')[-1])
   else:
@@ -259,7 +259,7 @@ def run_training():
 
     merged = tf.summary.merge_all()
 
-    sess.run(tf.assign(learning_rate,0.0003))
+    #sess.run(tf.assign(learning_rate,0.0003))
 
     train_writer = tf.summary.FileWriter('./visual_logs/train/attention', sess.graph)
     next_batch_start = -1
@@ -287,7 +287,7 @@ def run_training():
         train_writer.add_summary(summary, step)
         duration = time.time() - start_time
         print('Step %d: %.3f sec' % (step, duration))
-        print ("lr:%f "%sess.run(learning_rate)+"loss: " + "{:.4f}".format(losses*1.0/FLAGS.batch_size))
+        print ("lr:%f "%sess.run(learning_rate)+"loss: " + "{:.4f}".format(losses))
         # Save a checkpoint and evaluate the model periodically.
         if step%1000==0 and step!=0 and step!=start_steps or step+1 == FLAGS.max_steps:
             saver.save(sess, os.path.join(model_save_dir, 'c3d_ucf_model'), global_step=step)
@@ -295,7 +295,7 @@ def run_training():
             print('Training Data Eval:')
         if next_batch_start == -1:
             epoch+=1
-            if epoch%1==0 and epoch!=0:
+            if epoch%40==0 and epoch!=0:
                 # test
                 test_batch_start = -1
                 sum_acc=0
@@ -327,13 +327,13 @@ def run_training():
                         acc = sum_acc*1.0/total_num
                         print('Epoch: %d test accuracy: %f'%(epoch,acc))
                         break
-                if acc-last_acc<0.01:
-                    learning_rate_value = sess.run(learning_rate) 
-                    learning_rate_value *= 0.8
+                if acc-last_acc*1.1:
+                    learning_rate_value = sess.run(learning_rate)
+                    learning_rate_value *= 0.5
                     assign_op = tf.assign(learning_rate,learning_rate_value)
                     sess.run(assign_op)
                     print("acc:%f < last_acc*1.1:%f"%(acc,last_acc*1.1))
-                    print("learning_rate changed to %f"%sess.run(learning_rate))
+                    #print("learning_rate changed to %f"%sess.run(learning_rate))
                 last_acc = acc
     print("Done")
     train_writer.flush()
@@ -347,7 +347,7 @@ def run_testing():
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
     use_pretrained_model = True
-    model_filename = "./models/c3d_ucf_model-66000"
+    model_filename = "./models/82p/c3d_ucf_model-66000"
     pckmodel_filename = "./c3d.model"
     graph = tf.Graph()
     with graph.as_default():
@@ -434,8 +434,8 @@ def run_testing():
             print('Step %d: %.3f sec' % (step, duration))
 
             val_images, val_labels, next_batch_start, _, _,lines = input_data.read_clip_and_label(
-                rootdir='E:\\dataset\\VIVA_avi_part0\\VIVA_val',
-                filename='E:\\dataset\\VIVA_avi_part0\\val.txt',
+                rootdir='E:\\dataset\\VIVA_avi_group\\VIVA_avi_part0\\val',
+                filename='E:\\dataset\\VIVA_avi_group\\VIVA_avi_part0\\val.txt',
                 batch_size=1 * gpu_num,
                 lines=lines,
                 start_pos=next_batch_start,

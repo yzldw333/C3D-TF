@@ -33,9 +33,9 @@ def inference_c3d(_X, _keep_prob, batch_size, _weights, _biases):
     #  conv0 = tf.nn.relu(conv0, 'relu1')
     #  conv0 = tf.transpose(conv0,perm=[0,4,2,3,1])
 
-    conv0 = _X
+    #conv0 = _X
     with tf.name_scope('conv1') as scope:
-      conv1 = conv3d('conv1', conv0, _weights['wc1'], _biases['bc1'])
+      conv1 = conv3d('conv1',_X, _weights['wc1'], _biases['bc1'])
       conv1 = tf.nn.relu(conv1, 'relu1')
       pool1 = max_pool('pool1', conv1, k=1)
 

@@ -155,9 +155,9 @@ def read_clip_and_label(rootdir,filename,batch_size, lines=None,start_pos=-1, nu
     if phase == 'TRAIN':
       tmp_data, _ = get_frames_data(dirname, num_frames_per_clip,
                                       temporal_elastic_deformation=True,
-                                      random_dropping=True,
-                                      random_rotate_range=10,
-                                      random_scale_range=0.3) # default open temporal elastic deformation
+                                      random_dropping=False)
+                                      #random_rotate_range=10,
+                                      #random_scale_range=0.3) # default open temporal elastic deformation
     elif phase == 'TEST':
       tmp_data, _ = get_frames_data(dirname, num_frames_per_clip,temporal_elastic_deformation=False,random_dropping=False)
     img_datas = [];
