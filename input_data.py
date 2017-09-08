@@ -109,7 +109,7 @@ def get_frames_data(filename, num_frames_per_clip=16,temporal_elastic_deformatio
       # random_dropping
       if random_dropping == True:
         random_dropping_arr = np.random.rand(img_data.shape[0],img_data.shape[1],img_data.shape[2])
-        img_data[random_dropping_arr<0.5]=0
+        img_data[random_dropping_arr<0.3]=0
       ret_arr.append(img_data)
   return ret_arr, s_index
 
@@ -154,7 +154,7 @@ def read_clip_and_label(rootdir,filename,batch_size, lines=None,start_pos=-1, nu
       print("Loading a video clip from {}...".format(dirname))
     if phase == 'TRAIN':
       tmp_data, _ = get_frames_data(dirname, num_frames_per_clip,
-                                      temporal_elastic_deformation=True,
+                                      temporal_elastic_deformation=False,
                                       random_dropping=False)
                                       #random_rotate_range=10,
                                       #random_scale_range=0.3) # default open temporal elastic deformation

@@ -146,8 +146,8 @@ def run_training():
   if not os.path.exists(model_save_dir):
       os.makedirs(model_save_dir)
   use_pretrained_model = True
-  model_filename = "./models/c3d_ucf_model-5000"
-  model_filename = ""
+  model_filename = "./models/c3d_ucf_model-3000"
+  #model_filename = ""
   if len(model_filename)!=0:
     start_steps=int(model_filename.strip().split('-')[-1])
   else:
@@ -167,7 +167,7 @@ def run_training():
     tower_grads1 = []
     tower_grads2 = []
     logits = []
-    base_lr = 0.0005
+    base_lr = 0.0001
     learning_rate = tf.Variable(base_lr,trainable=False)
     #opt1 = tf.train.AdamOptimizer(learning_rate)
     #opt2 = tf.train.AdamOptimizer(learning_rate*2)
@@ -259,7 +259,7 @@ def run_training():
 
     merged = tf.summary.merge_all()
 
-    #sess.run(tf.assign(learning_rate,0.0003))
+    sess.run(tf.assign(learning_rate,0.0001))
 
     train_writer = tf.summary.FileWriter('./visual_logs/train/attention', sess.graph)
     next_batch_start = -1
