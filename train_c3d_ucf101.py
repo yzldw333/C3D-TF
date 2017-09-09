@@ -30,7 +30,7 @@ flags = tf.app.flags
 gpu_num = 1
 #flags.DEFINE_float('learning_rate', 0.0, 'Initial learning rate.')
 flags.DEFINE_integer('max_steps', 70000, 'Number of steps to run trainer.')
-flags.DEFINE_integer('batch_size', 3, 'Batch size.')
+flags.DEFINE_integer('batch_size', 5, 'Batch size.')
 FLAGS = flags.FLAGS
 
 MOVING_AVERAGE_DECAY = 0.9999
@@ -146,7 +146,7 @@ def run_training():
   if not os.path.exists(model_save_dir):
       os.makedirs(model_save_dir)
   use_pretrained_model = True
-  model_filename = "./models/c3d_ucf_model-3000"
+  model_filename = "./models/c3d_ucf_model-21000"
   #model_filename = ""
   if len(model_filename)!=0:
     start_steps=int(model_filename.strip().split('-')[-1])
@@ -167,7 +167,7 @@ def run_training():
     tower_grads1 = []
     tower_grads2 = []
     logits = []
-    base_lr = 0.0001
+    base_lr = 0.001
     learning_rate = tf.Variable(base_lr,trainable=False)
     #opt1 = tf.train.AdamOptimizer(learning_rate)
     #opt2 = tf.train.AdamOptimizer(learning_rate*2)
@@ -327,7 +327,7 @@ def run_training():
                         acc = sum_acc*1.0/total_num
                         print('Epoch: %d test accuracy: %f'%(epoch,acc))
                         break
-                if acc-last_acc*1.1:
+                if acc<last_acc*1.1:
                     learning_rate_value = sess.run(learning_rate)
                     learning_rate_value *= 0.5
                     assign_op = tf.assign(learning_rate,learning_rate_value)
