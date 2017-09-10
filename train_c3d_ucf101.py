@@ -30,7 +30,7 @@ flags = tf.app.flags
 gpu_num = 1
 #flags.DEFINE_float('learning_rate', 0.0, 'Initial learning rate.')
 flags.DEFINE_integer('max_steps', 70000, 'Number of steps to run trainer.')
-flags.DEFINE_integer('batch_size', 5, 'Batch size.')
+flags.DEFINE_integer('batch_size', 8, 'Batch size.')
 FLAGS = flags.FLAGS
 
 MOVING_AVERAGE_DECAY = 0.9999
@@ -146,8 +146,8 @@ def run_training():
   if not os.path.exists(model_save_dir):
       os.makedirs(model_save_dir)
   use_pretrained_model = True
-  model_filename = "./models/c3d_ucf_model-21000"
-  #model_filename = ""
+  model_filename = "./models/c3d_ucf_model-34000"
+  model_filename = ""
   if len(model_filename)!=0:
     start_steps=int(model_filename.strip().split('-')[-1])
   else:
@@ -169,10 +169,10 @@ def run_training():
     logits = []
     base_lr = 0.001
     learning_rate = tf.Variable(base_lr,trainable=False)
-    #opt1 = tf.train.AdamOptimizer(learning_rate)
-    #opt2 = tf.train.AdamOptimizer(learning_rate*2)
-    opt1 = tf.train.MomentumOptimizer(learning_rate,0.9,use_nesterov=True)
-    opt2 = tf.train.MomentumOptimizer(learning_rate,0.9,use_nesterov=True)
+    opt1 = tf.train.AdamOptimizer(learning_rate)
+    opt2 = tf.train.AdamOptimizer(learning_rate*2)
+    #opt1 = tf.train.MomentumOptimizer(learning_rate,0.9,use_nesterov=True)
+    #opt2 = tf.train.MomentumOptimizer(learning_rate,0.9,use_nesterov=True)
     for gpu_index in range(0, gpu_num):
       with tf.device('/gpu:%d' % gpu_index):
         with tf.name_scope('%s-%d' % ('ludongwei-pc', gpu_index)) as scope:
@@ -259,16 +259,20 @@ def run_training():
 
     merged = tf.summary.merge_all()
 
-    sess.run(tf.assign(learning_rate,0.0001))
+    #sess.run(tf.assign(learning_rate,0.00008))
 
     train_writer = tf.summary.FileWriter('./visual_logs/train/attention', sess.graph)
     next_batch_start = -1
     last_acc = 0
     lines=None
     epoch = 0
+    losses=5
     for step in xrange(start_steps,FLAGS.max_steps):
         start_time = time.time()
-
+        if losses<0.5:
+            status = 'TRAIN'
+        else:
+            status = 'TEST' 
         train_images, train_labels, next_batch_start, _, _,lines = input_data.read_clip_and_label(
                         rootdir = 'E:\\dataset\\VIVA_avi_group\\VIVA_avi_part0\\train',
                         filename='E:\\dataset\\VIVA_avi_group\\VIVA_avi_part0\\gen_train_shuffle.txt',
@@ -278,7 +282,7 @@ def run_training():
                         num_frames_per_clip=C3DModel.NUM_FRAMES_PER_CLIP,
                         crop_size=(C3DModel.HEIGHT,C3DModel.WIDTH),
                         shuffle=False,
-                        phase='TRAIN'
+                        phase=status
                         )
         _,losses,summary = sess.run([train_op,loss,merged], feed_dict={
                         images_placeholder: train_images,
@@ -347,7 +351,7 @@ def run_testing():
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
     use_pretrained_model = True
-    model_filename = "./models/82p/c3d_ucf_model-66000"
+    model_filename = "./models/c3d_ucf_model-36000"
     pckmodel_filename = "./c3d.model"
     graph = tf.Graph()
     with graph.as_default():
