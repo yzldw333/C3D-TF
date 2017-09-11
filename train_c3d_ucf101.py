@@ -27,10 +27,10 @@ from Net import C3DModel
 from Net import LoadPCKModel
 # Basic model parameters as external flags.
 flags = tf.app.flags
-gpu_num = 2
+gpu_num = 1
 #flags.DEFINE_float('learning_rate', 0.0, 'Initial learning rate.')
 flags.DEFINE_integer('max_steps', 70000, 'Number of steps to run trainer.')
-flags.DEFINE_integer('batch_size', 4, 'Batch size.')
+flags.DEFINE_integer('batch_size', 8, 'Batch size.')
 FLAGS = flags.FLAGS
 
 MOVING_AVERAGE_DECAY = 0.9999
@@ -60,17 +60,17 @@ def placeholder_inputs(batch_size):
                                                            C3DModel.CHANNELS))
     labels_placeholder = tf.placeholder(tf.int64, shape=(batch_size))
 
-    visualize_imgs = tf.slice(images_placeholder,[0,0,0,0,0],
-                                                  [1, C3DModel.NUM_FRAMES_PER_CLIP,
-                                                   C3DModel.HEIGHT,
-                                                   C3DModel.WIDTH,
-                                                   C3DModel.CHANNELS]
-                              )
-    visualize_imgs = tf.reshape(visualize_imgs,[C3DModel.NUM_FRAMES_PER_CLIP,
-                                                   C3DModel.HEIGHT,
-                                                   C3DModel.WIDTH,
-                                                   C3DModel.CHANNELS])
-    tf.summary.image('input_images',visualize_imgs,16)
+    #visualize_imgs = tf.slice(images_placeholder,[0,0,0,0,0],
+    #                                              [1, C3DModel.NUM_FRAMES_PER_CLIP,
+    ##                                               C3DModel.HEIGHT,
+    #                                               C3DModel.WIDTH,
+    #                                               C3DModel.CHANNELS]
+    #                          )
+    #visualize_imgs = tf.reshape(visualize_imgs,[C3DModel.NUM_FRAMES_PER_CLIP,
+    #                                               C3DModel.HEIGHT,
+    #                                               C3DModel.WIDTH,
+    #                                               C3DModel.CHANNELS])
+    #tf.summary.image('input_images',visualize_imgs,16)
   return images_placeholder, labels_placeholder
 
 def average_gradients(tower_grads):
@@ -269,13 +269,13 @@ def run_training():
     losses=5
     for step in xrange(start_steps,FLAGS.max_steps):
         start_time = time.time()
-        if losses<0.5:
+        if epoch>20:
             status = 'TRAIN'
         else:
             status = 'TEST' 
         train_images, train_labels, next_batch_start, _, _,lines = input_data.read_clip_and_label(
-                        rootdir = '/ldw/VIVA_avi_group/VIVA_avi_part0/train',
-                        filename='/ldw/VIVA_avi_group/VIVA_avi_part0/gen_train_shuffle.txt',
+                        rootdir = 'D:\\LuDongwei-Space\\VIVA_data\\VIVA_avi_group\\VIVA_avi_part0\\train',
+                        filename='D:\\LuDongwei-Space\\VIVA_data\\VIVA_avi_group\\VIVA_avi_part0\\gen_train_shuffle.txt',
                         batch_size=FLAGS.batch_size * gpu_num,
                         lines=lines,
                         start_pos=next_batch_start,
@@ -290,7 +290,7 @@ def run_training():
                         })
         train_writer.add_summary(summary, step)
         duration = time.time() - start_time
-        print('Step %d: %.3f sec' % (step, duration))
+        print('Epoch %d: Step %d: %.3f sec' % (epoch,step, duration))
         print ("lr:%f "%sess.run(learning_rate)+"loss: " + "{:.4f}".format(losses))
         # Save a checkpoint and evaluate the model periodically.
         if step%1000==0 and step!=0 and step!=start_steps or step+1 == FLAGS.max_steps:
@@ -307,8 +307,8 @@ def run_training():
                 while True:
                     test_lines = None
                     val_images, val_labels, test_batch_start, _, _,test_lines = input_data.read_clip_and_label(
-                        rootdir='/ldw/VIVA_avi_group/VIVA_avi_part0/val',
-                        filename='/ldw/VIVA_avi_group/VIVA_avi_part0/val.txt',
+                        rootdir='D:\\LuDongwei-Space\\VIVA_data\\VIVA_avi_group\\VIVA_avi_part0\\val',
+                        filename='D:\\LuDongwei-Space\\VIVA_data\\VIVA_avi_group\\VIVA_avi_part0\\val.txt',
                         batch_size=1 * gpu_num,
                         lines=test_lines,
                         start_pos=test_batch_start,
