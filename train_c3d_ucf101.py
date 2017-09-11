@@ -27,10 +27,10 @@ from Net import C3DModel
 from Net import LoadPCKModel
 # Basic model parameters as external flags.
 flags = tf.app.flags
-gpu_num = 1
+gpu_num = 2
 #flags.DEFINE_float('learning_rate', 0.0, 'Initial learning rate.')
 flags.DEFINE_integer('max_steps', 70000, 'Number of steps to run trainer.')
-flags.DEFINE_integer('batch_size', 8, 'Batch size.')
+flags.DEFINE_integer('batch_size', 4, 'Batch size.')
 FLAGS = flags.FLAGS
 
 MOVING_AVERAGE_DECAY = 0.9999
@@ -167,7 +167,7 @@ def run_training():
     tower_grads1 = []
     tower_grads2 = []
     logits = []
-    base_lr = 0.001
+    base_lr = 0.0001
     learning_rate = tf.Variable(base_lr,trainable=False)
     opt1 = tf.train.AdamOptimizer(learning_rate)
     opt2 = tf.train.AdamOptimizer(learning_rate*2)
@@ -178,7 +178,7 @@ def run_training():
         with tf.name_scope('%s-%d' % ('ludongwei-pc', gpu_index)) as scope:
           with tf.variable_scope('var_name') as var_scope:
             weights = {
-              #'wc0': _variable_on_cpu('wc0', [1, 1, 1, 16,16], tf.constant_initializer(1/16.0)),
+              'wc0': _variable_on_cpu('wc0', [1, 1, 1, 16,16], tf.constant_initializer(1/16.0)),
               'wc1': _variable_with_weight_decay('wc1', [3, 3, 3, 3, 64], 0.0005),
               'wc2': _variable_with_weight_decay('wc2', [3, 3, 3, 64, 128], 0.0005),
               'wc3a': _variable_with_weight_decay('wc3a', [3, 3, 3, 128, 256], 0.0005),
@@ -189,7 +189,7 @@ def run_training():
               'out': _variable_with_weight_decay('wout', [2048, C3DModel.NUM_CLASSES], 0.0005)
               }
             biases = {
-              #'bc0': _variable_with_weight_decay('bc0', [16],0.000),
+              'bc0': _variable_with_weight_decay('bc0', [16],0.000),
               'bc1': _variable_with_weight_decay('bc1', [64], 0.000),
               'bc2': _variable_with_weight_decay('bc2', [128], 0.000),
               'bc3a': _variable_with_weight_decay('bc3a', [256], 0.000),
@@ -274,8 +274,8 @@ def run_training():
         else:
             status = 'TEST' 
         train_images, train_labels, next_batch_start, _, _,lines = input_data.read_clip_and_label(
-                        rootdir = 'E:\\dataset\\VIVA_avi_group\\VIVA_avi_part0\\train',
-                        filename='E:\\dataset\\VIVA_avi_group\\VIVA_avi_part0\\gen_train_shuffle.txt',
+                        rootdir = '/ldw/VIVA_avi_group/VIVA_avi_part0/train',
+                        filename='/ldw/VIVA_avi_group/VIVA_avi_part0/gen_train_shuffle.txt',
                         batch_size=FLAGS.batch_size * gpu_num,
                         lines=lines,
                         start_pos=next_batch_start,
@@ -307,8 +307,8 @@ def run_training():
                 while True:
                     test_lines = None
                     val_images, val_labels, test_batch_start, _, _,test_lines = input_data.read_clip_and_label(
-                        rootdir='E:\\dataset\\VIVA_avi_group\\VIVA_avi_part0\\val',
-                        filename='E:\\dataset\\VIVA_avi_group\\VIVA_avi_part0\\val.txt',
+                        rootdir='/ldw/VIVA_avi_group/VIVA_avi_part0/val',
+                        filename='/ldw/VIVA_avi_group/VIVA_avi_part0/val.txt',
                         batch_size=1 * gpu_num,
                         lines=test_lines,
                         start_pos=test_batch_start,
