@@ -113,7 +113,7 @@ def tower_loss(name_scope, logit, labels):
 
 def cross_entropy_loss(name_scope, logit, labels):
     cross_entropy_mean = tf.reduce_mean(
-        tf.nn.sparse_softmax_cross_entropy_with_logits(logit, labels)
+        tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logit, labels=labels)
     )
     tf.summary.scalar(
         name_scope + '-cross_entropy',
@@ -134,7 +134,7 @@ def _variable_on_cpu(name, shape, initializer):
 def _variable_with_weight_decay(name, shape, wd):
   var = _variable_on_cpu(name, shape, tf.contrib.layers.xavier_initializer())
   if wd is not None:
-    weight_decay = tf.mul(tf.nn.l2_loss(var), wd, name='weight_loss')
+    weight_decay = tf.multiply(tf.nn.l2_loss(var), wd, name='weight_loss')
     tf.add_to_collection('losses', weight_decay)
   return var
 
@@ -146,8 +146,8 @@ def run_training():
   if not os.path.exists(model_save_dir):
       os.makedirs(model_save_dir)
   use_pretrained_model = True
-  model_filename = "./models/c3d_ucf_model-34000"
-  model_filename = ""
+  model_filename = "./models/c3d_ucf_model-20000"
+  #model_filename = ""
   if len(model_filename)!=0:
     start_steps=int(model_filename.strip().split('-')[-1])
   else:
@@ -167,7 +167,7 @@ def run_training():
     tower_grads1 = []
     tower_grads2 = []
     logits = []
-    base_lr = 0.001
+    base_lr = 0.0001
     learning_rate = tf.Variable(base_lr,trainable=False)
     opt1 = tf.train.AdamOptimizer(learning_rate)
     opt2 = tf.train.AdamOptimizer(learning_rate*2)
@@ -265,13 +265,15 @@ def run_training():
     next_batch_start = -1
     last_acc = 0
     lines=None
-    epoch = 0
+    epoch = 20
     losses=5
     for step in xrange(start_steps,FLAGS.max_steps):
         start_time = time.time()
-        if losses<0.5:
+        if epoch>=20:
+            # open data augmentation
             status = 'TRAIN'
         else:
+            # close data augmentation
             status = 'TEST' 
         train_images, train_labels, next_batch_start, _, _,lines = input_data.read_clip_and_label(
                         rootdir = 'E:\\dataset\\VIVA_avi_group\\VIVA_avi_part0\\train',
@@ -290,7 +292,7 @@ def run_training():
                         })
         train_writer.add_summary(summary, step)
         duration = time.time() - start_time
-        print('Step %d: %.3f sec' % (step, duration))
+        print('Epoch: %d Step %d: %.3f sec' % (epoch, step, duration))
         print ("lr:%f "%sess.run(learning_rate)+"loss: " + "{:.4f}".format(losses))
         # Save a checkpoint and evaluate the model periodically.
         if step%1000==0 and step!=0 and step!=start_steps or step+1 == FLAGS.max_steps:
@@ -351,7 +353,7 @@ def run_testing():
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
     use_pretrained_model = True
-    model_filename = "./models/c3d_ucf_model-36000"
+    model_filename = "./models/c3d_ucf_model-20000"
     pckmodel_filename = "./c3d.model"
     graph = tf.Graph()
     with graph.as_default():
