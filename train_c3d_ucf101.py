@@ -146,8 +146,8 @@ def run_training():
   if not os.path.exists(model_save_dir):
       os.makedirs(model_save_dir)
   use_pretrained_model = True
-  model_filename = "./models/c3d_ucf_model-20000"
-  #model_filename = ""
+  model_filename = "./models/c3d_ucf_model-41000"
+  model_filename = ""
   if len(model_filename)!=0:
     start_steps=int(model_filename.strip().split('-')[-1])
   else:
@@ -265,7 +265,7 @@ def run_training():
     next_batch_start = -1
     last_acc = 0
     lines=None
-    epoch = 20
+    epoch = 0
     losses=5
     for step in xrange(start_steps,FLAGS.max_steps):
         start_time = time.time()
@@ -301,6 +301,10 @@ def run_training():
             print('Training Data Eval:')
         if next_batch_start == -1:
             epoch+=1
+            if epoch==200:
+                print("Learning Done.")
+                break
+
             if epoch%40==0 and epoch!=0:
                 # test
                 test_batch_start = -1
@@ -353,7 +357,7 @@ def run_testing():
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
     use_pretrained_model = True
-    model_filename = "./models/c3d_ucf_model-20000"
+    model_filename = "./models/c3d_ucf_model-41000"
     pckmodel_filename = "./c3d.model"
     graph = tf.Graph()
     with graph.as_default():
