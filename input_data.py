@@ -150,8 +150,8 @@ def read_clip_and_label(rootdir,filename,batch_size, lines=None,start_pos=-1, nu
       dirname = os.path.join(rootdir,dirname)
 
     tmp_label = line[2] # to serve C3D caffe project
-    if not shuffle:
-      print("Loading a video clip from {}...".format(dirname))
+    #if not shuffle:
+    #  print("Loading a video clip from {}...".format(dirname))
     if phase == 'TRAIN':
       tmp_data, _ = get_frames_data(dirname, num_frames_per_clip,
                                       temporal_elastic_deformation=True,

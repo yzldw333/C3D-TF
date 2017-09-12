@@ -275,6 +275,7 @@ def run_training():
         else:
             # close data augmentation
             status = 'TEST' 
+        startprocess_time = time.time()
         train_images, train_labels, next_batch_start, _, _,lines = input_data.read_clip_and_label(
                         rootdir = 'E:\\dataset\\VIVA_avi_group\\VIVA_avi_part0\\train',
                         filename='E:\\dataset\\VIVA_avi_group\\VIVA_avi_part0\\gen_train_shuffle.txt',
@@ -286,6 +287,9 @@ def run_training():
                         shuffle=False,
                         phase=status
                         )
+        endprocess_time = time.time()
+        preprocess_time = ((endprocess_time-startprocess_time)/(FLAGS.batch_size*gpu_num))
+        print("preprocess per time :%f"%preprocess_time)
         _,losses,summary = sess.run([train_op,loss,merged], feed_dict={
                         images_placeholder: train_images,
                         labels_placeholder: train_labels
