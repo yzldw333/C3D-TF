@@ -1,7 +1,7 @@
 # encoding:utf-8
 import numpy as np
 import cv2
-
+import cu_tvl1_opticalflow
 # import video #Opencv Python自带的读取
 
 help_message = '''''
@@ -12,7 +12,25 @@ Keys:
  2 - toggle glitch
 
 '''
+pFlow = None
+flowBuffer = None
+def calTV1OpticalFlow(prvs,next):
+    import time
+    st = time.time()
+    global pFlow
+    global flowBuffer
+    if prvs is None or next is None or prvs.shape!=next.shape:
+        return None
+    #if pFlow is None:
+    #    pFlow = cv2.DualTVL1OpticalFlow_create()
+    #if flowBuffer is None or flowBuffer.shape != next.shape:
+    #    flowBuffer = np.zeros((next.shape[0],next.shape[1],2),dtype=np.float32)
+    flowBuffer = cu_tvl1_opticalflow.cudaTVL1OpticalFlowWrapper(prvs,next)
+    print(time.time()-st)
+    return flowBuffer.copy()
 
+def calRGBDifference(prvs,next):
+    pass
 
 def draw_flow(img, flow, step=16):
     h, w = img.shape[:2]
@@ -50,6 +68,8 @@ def warp_flow(img, flow):
 
 
 if __name__ == '__main__':
+
+
     import sys
     try:
         fn = sys.argv[1]
@@ -57,25 +77,40 @@ if __name__ == '__main__':
         fn = 0
 
     cam = cv2.VideoCapture(r'E:\dataset\VIVA\01_01_01.avi')  # 读取视频
+    #cam = cv2.VideoCapture(0)
     ret, prev = cam.read()  # 读取视频第一帧作为光流输入的当前帧֡
     # prev = cv2.imread('E:\lena.jpg')
-    prevgray = cv2.cvtColor(prev, cv2.COLOR_BGR2GRAY)
-    show_hsv = False
-    show_glitch = False
-    cur_glitch = prev.copy()
 
+    # prevgray = cv2.cvtColor(prev, cv2.COLOR_BGR2GRAY)
+    # show_hsv = False
+    # show_glitch = False
+    # cur_glitch = prev.copy()
+
+    ret, frame1 = cam.read()
+    prvs = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
+    hsv = np.zeros_like(frame1)
+    hsv[..., 1] = 255
+    #pFlow = cv2.DualTVL1OpticalFlow_create()
     while True:
-        ret, img = cam.read()  # 读取视频的下一帧作为光流输入的当前帧
-        if ret == True:  # 判断视频是否结束
-            if cv2.waitKey(10) == 27:
+
+            ret, frame2 = cam.read()
+            if ret==False:
                 break
-            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-            flow = cv2.calcOpticalFlowFarneback(prevgray, gray,cv2.CV_8U, 0.5, 3, 15, 3, 5, 1.2, 0)  # Farnback光流法
-            prevgray = gray  # 计算完光流后，将当前帧存储为下一次计算的前一帧
-            cv2.normalize(src=flow,dst=flow,alpha=0,beta=1,norm_type=cv2.NORM_MINMAX)
-            flow*=255
-            flow=flow.astype(np.uint8)
-            #showimg = cv2.addWeighted(flow[:,:,0],0.5,flow[:,:,1],0.5,0)
-            cv2.imshow('flow', flow[:,:,0])
-            cv2.waitKey(0)
-            cv2.imwrite(r'flow.jpg', flow[:, :, 0])
+            next = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY)
+            #flow = np.zeros(shape=(next.shape[0],next.shape[1],2),dtype=np.float32)
+            #flow = cv2.CreateMat(3, 3, cv2.CV_32FC2)
+            #pFlow.calc(prvs,next,flow)
+            flow = calTV1OpticalFlow(prvs,next)
+            #flow = cv2.calcOpticalFlowFarneback(prvs, next, None, 0.5, 3, 15,  3, 5, 1.2, 0)
+            mag, ang = cv2.cartToPolar(flow[..., 0], flow[..., 1])
+            hsv[..., 0] = ang * 180 / np.pi / 2
+            hsv[..., 2] = cv2.normalize(mag, None, 0, 255, cv2.NORM_MINMAX)
+            bgr = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
+            cv2.imshow('frame2', bgr)
+            k = cv2.waitKey(10) & 0xff
+            if k == 27:
+                break
+            elif k == ord('s'):
+                cv2.imwrite('opticalfb.png', frame2)
+                cv2.imwrite('opticalhsv.png', bgr)
+            prvs = next
