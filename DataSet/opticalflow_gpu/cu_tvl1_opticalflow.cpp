@@ -1521,6 +1521,7 @@ static CYTHON_INLINE int __pyx_f_5numpy_import_array(void); /*proto*/
 /* Module declarations from 'libcpp' */
 
 /* Module declarations from 'cu_tvl1_opticalflow' */
+static Ptr<cv::cuda::OpticalFlowDual_TVL1>  __pyx_v_19cu_tvl1_opticalflow_pFlow;
 static __Pyx_TypeInfo __Pyx_TypeInfo_nn___pyx_t_5numpy_uint8_t = { "uint8_t", NULL, sizeof(__pyx_t_5numpy_uint8_t), { 0 }, 0, IS_UNSIGNED(__pyx_t_5numpy_uint8_t) ? 'U' : 'I', IS_UNSIGNED(__pyx_t_5numpy_uint8_t), 0 };
 #define __Pyx_MODULE_NAME "cu_tvl1_opticalflow"
 int __pyx_module_is_main_cu_tvl1_opticalflow = 0;
@@ -1537,7 +1538,6 @@ static const char __pyx_k_next[] = "next";
 static const char __pyx_k_prsv[] = "prsv";
 static const char __pyx_k_test[] = "__test__";
 static const char __pyx_k_numpy[] = "numpy";
-static const char __pyx_k_pFlow[] = "pFlow";
 static const char __pyx_k_range[] = "range";
 static const char __pyx_k_import[] = "__import__";
 static const char __pyx_k_flowMat[] = "flowMat";
@@ -1585,7 +1585,6 @@ static PyObject *__pyx_n_s_np;
 static PyObject *__pyx_n_s_numpy;
 static PyObject *__pyx_kp_s_numpy_core_multiarray_failed_to;
 static PyObject *__pyx_kp_s_numpy_core_umath_failed_to_impor;
-static PyObject *__pyx_n_s_pFlow;
 static PyObject *__pyx_n_s_prevMat;
 static PyObject *__pyx_n_s_prevMat_GPU;
 static PyObject *__pyx_n_s_prsv;
@@ -1607,9 +1606,9 @@ static PyObject *__pyx_tuple__9;
 static PyObject *__pyx_tuple__10;
 static PyObject *__pyx_codeobj__11;
 
-/* "cu_tvl1_opticalflow.pyx":4
- * cimport numpy as np  # Import numpy C/C++ API
- * from cython.operator cimport dereference
+/* "cu_tvl1_opticalflow.pyx":6
+ * cdef Ptr[OpticalFlowDual_TVL1] pFlow= OpticalFlowDual_TVL1.create()
+ * 
  * def cudaTVL1OpticalFlowWrapper(np.ndarray[np.uint8_t, ndim=2] prsv,             # <<<<<<<<<<<<<<
  *                                np.ndarray[np.uint8_t, ndim=2] next):
  *     np.import_array()
@@ -1647,11 +1646,11 @@ static PyObject *__pyx_pw_19cu_tvl1_opticalflow_1cudaTVL1OpticalFlowWrapper(PyOb
         case  1:
         if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_next)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("cudaTVL1OpticalFlowWrapper", 1, 2, 2, 1); __PYX_ERR(0, 4, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("cudaTVL1OpticalFlowWrapper", 1, 2, 2, 1); __PYX_ERR(0, 6, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "cudaTVL1OpticalFlowWrapper") < 0)) __PYX_ERR(0, 4, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "cudaTVL1OpticalFlowWrapper") < 0)) __PYX_ERR(0, 6, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
       goto __pyx_L5_argtuple_error;
@@ -1664,14 +1663,14 @@ static PyObject *__pyx_pw_19cu_tvl1_opticalflow_1cudaTVL1OpticalFlowWrapper(PyOb
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("cudaTVL1OpticalFlowWrapper", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 4, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("cudaTVL1OpticalFlowWrapper", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 6, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("cu_tvl1_opticalflow.cudaTVL1OpticalFlowWrapper", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_prsv), __pyx_ptype_5numpy_ndarray, 1, "prsv", 0))) __PYX_ERR(0, 4, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_next), __pyx_ptype_5numpy_ndarray, 1, "next", 0))) __PYX_ERR(0, 5, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_prsv), __pyx_ptype_5numpy_ndarray, 1, "prsv", 0))) __PYX_ERR(0, 6, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_next), __pyx_ptype_5numpy_ndarray, 1, "next", 0))) __PYX_ERR(0, 7, __pyx_L1_error)
   __pyx_r = __pyx_pf_19cu_tvl1_opticalflow_cudaTVL1OpticalFlowWrapper(__pyx_self, __pyx_v_prsv, __pyx_v_next);
 
   /* function exit code */
@@ -1688,7 +1687,6 @@ static PyObject *__pyx_pf_19cu_tvl1_opticalflow_cudaTVL1OpticalFlowWrapper(CYTHO
   cv::cuda::GpuMat __pyx_v_prevMat_GPU;
   cv::Mat __pyx_v_nextMat;
   cv::cuda::GpuMat __pyx_v_nextMat_GPU;
-  Ptr<cv::cuda::OpticalFlowDual_TVL1>  __pyx_v_pFlow;
   cv::cuda::GpuMat __pyx_v_flowMat_GPU;
   cv::Mat __pyx_v_flowMat;
   PyArrayObject *__pyx_v_flow = NULL;
@@ -1712,25 +1710,25 @@ static PyObject *__pyx_pf_19cu_tvl1_opticalflow_cudaTVL1OpticalFlowWrapper(CYTHO
   __pyx_pybuffernd_next.rcbuffer = &__pyx_pybuffer_next;
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_prsv.rcbuffer->pybuffer, (PyObject*)__pyx_v_prsv, &__Pyx_TypeInfo_nn___pyx_t_5numpy_uint8_t, PyBUF_FORMAT| PyBUF_STRIDES, 2, 0, __pyx_stack) == -1)) __PYX_ERR(0, 4, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_prsv.rcbuffer->pybuffer, (PyObject*)__pyx_v_prsv, &__Pyx_TypeInfo_nn___pyx_t_5numpy_uint8_t, PyBUF_FORMAT| PyBUF_STRIDES, 2, 0, __pyx_stack) == -1)) __PYX_ERR(0, 6, __pyx_L1_error)
   }
   __pyx_pybuffernd_prsv.diminfo[0].strides = __pyx_pybuffernd_prsv.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_prsv.diminfo[0].shape = __pyx_pybuffernd_prsv.rcbuffer->pybuffer.shape[0]; __pyx_pybuffernd_prsv.diminfo[1].strides = __pyx_pybuffernd_prsv.rcbuffer->pybuffer.strides[1]; __pyx_pybuffernd_prsv.diminfo[1].shape = __pyx_pybuffernd_prsv.rcbuffer->pybuffer.shape[1];
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_next.rcbuffer->pybuffer, (PyObject*)__pyx_v_next, &__Pyx_TypeInfo_nn___pyx_t_5numpy_uint8_t, PyBUF_FORMAT| PyBUF_STRIDES, 2, 0, __pyx_stack) == -1)) __PYX_ERR(0, 4, __pyx_L1_error)
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_next.rcbuffer->pybuffer, (PyObject*)__pyx_v_next, &__Pyx_TypeInfo_nn___pyx_t_5numpy_uint8_t, PyBUF_FORMAT| PyBUF_STRIDES, 2, 0, __pyx_stack) == -1)) __PYX_ERR(0, 6, __pyx_L1_error)
   }
   __pyx_pybuffernd_next.diminfo[0].strides = __pyx_pybuffernd_next.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_next.diminfo[0].shape = __pyx_pybuffernd_next.rcbuffer->pybuffer.shape[0]; __pyx_pybuffernd_next.diminfo[1].strides = __pyx_pybuffernd_next.rcbuffer->pybuffer.strides[1]; __pyx_pybuffernd_next.diminfo[1].shape = __pyx_pybuffernd_next.rcbuffer->pybuffer.shape[1];
 
-  /* "cu_tvl1_opticalflow.pyx":6
+  /* "cu_tvl1_opticalflow.pyx":8
  * def cudaTVL1OpticalFlowWrapper(np.ndarray[np.uint8_t, ndim=2] prsv,
  *                                np.ndarray[np.uint8_t, ndim=2] next):
  *     np.import_array()             # <<<<<<<<<<<<<<
  *     cdef Mat prevMat
  * 
  */
-  __pyx_t_1 = __pyx_f_5numpy_import_array(); if (unlikely(__pyx_t_1 == -1)) __PYX_ERR(0, 6, __pyx_L1_error)
+  __pyx_t_1 = __pyx_f_5numpy_import_array(); if (unlikely(__pyx_t_1 == -1)) __PYX_ERR(0, 8, __pyx_L1_error)
 
-  /* "cu_tvl1_opticalflow.pyx":9
+  /* "cu_tvl1_opticalflow.pyx":11
  *     cdef Mat prevMat
  * 
  *     pyopencv_to(<PyObject*> prsv, prevMat)             # <<<<<<<<<<<<<<
@@ -1739,7 +1737,7 @@ static PyObject *__pyx_pf_19cu_tvl1_opticalflow_cudaTVL1OpticalFlowWrapper(CYTHO
  */
   pyopencv_to(((PyObject *)__pyx_v_prsv), __pyx_v_prevMat);
 
-  /* "cu_tvl1_opticalflow.pyx":11
+  /* "cu_tvl1_opticalflow.pyx":13
  *     pyopencv_to(<PyObject*> prsv, prevMat)
  *     cdef GpuMat prevMat_GPU
  *     prevMat_GPU.upload(prevMat)             # <<<<<<<<<<<<<<
@@ -1750,10 +1748,10 @@ static PyObject *__pyx_pf_19cu_tvl1_opticalflow_cudaTVL1OpticalFlowWrapper(CYTHO
     __pyx_v_prevMat_GPU.upload(__pyx_v_prevMat);
   } catch(...) {
     __Pyx_CppExn2PyErr();
-    __PYX_ERR(0, 11, __pyx_L1_error)
+    __PYX_ERR(0, 13, __pyx_L1_error)
   }
 
-  /* "cu_tvl1_opticalflow.pyx":14
+  /* "cu_tvl1_opticalflow.pyx":16
  *     cdef Mat nextMat
  * 
  *     pyopencv_to(<PyObject*> next, nextMat)             # <<<<<<<<<<<<<<
@@ -1762,39 +1760,30 @@ static PyObject *__pyx_pf_19cu_tvl1_opticalflow_cudaTVL1OpticalFlowWrapper(CYTHO
  */
   pyopencv_to(((PyObject *)__pyx_v_next), __pyx_v_nextMat);
 
-  /* "cu_tvl1_opticalflow.pyx":16
+  /* "cu_tvl1_opticalflow.pyx":18
  *     pyopencv_to(<PyObject*> next, nextMat)
  *     cdef GpuMat nextMat_GPU
  *     nextMat_GPU.upload(nextMat)             # <<<<<<<<<<<<<<
- *     cdef Ptr[OpticalFlowDual_TVL1] pFlow= OpticalFlowDual_TVL1.create()
  * 
+ *     global pFlow
  */
   try {
     __pyx_v_nextMat_GPU.upload(__pyx_v_nextMat);
   } catch(...) {
     __Pyx_CppExn2PyErr();
-    __PYX_ERR(0, 16, __pyx_L1_error)
+    __PYX_ERR(0, 18, __pyx_L1_error)
   }
 
-  /* "cu_tvl1_opticalflow.pyx":17
- *     cdef GpuMat nextMat_GPU
- *     nextMat_GPU.upload(nextMat)
- *     cdef Ptr[OpticalFlowDual_TVL1] pFlow= OpticalFlowDual_TVL1.create()             # <<<<<<<<<<<<<<
- * 
- * 
- */
-  __pyx_v_pFlow = cv::cuda::OpticalFlowDual_TVL1::create();
-
-  /* "cu_tvl1_opticalflow.pyx":23
+  /* "cu_tvl1_opticalflow.pyx":25
  *     cdef Mat flowMat
  *     #pyopencv_to(<PyObject*> flow, flowMat)
  *     dereference(pFlow).calc(prevMat_GPU,nextMat_GPU,flowMat_GPU)             # <<<<<<<<<<<<<<
  * 
  *     flowMat_GPU.download(flowMat)
  */
-  (*__pyx_v_pFlow).calc(__pyx_v_prevMat_GPU, __pyx_v_nextMat_GPU, __pyx_v_flowMat_GPU);
+  (*__pyx_v_19cu_tvl1_opticalflow_pFlow).calc(__pyx_v_prevMat_GPU, __pyx_v_nextMat_GPU, __pyx_v_flowMat_GPU);
 
-  /* "cu_tvl1_opticalflow.pyx":25
+  /* "cu_tvl1_opticalflow.pyx":27
  *     dereference(pFlow).calc(prevMat_GPU,nextMat_GPU,flowMat_GPU)
  * 
  *     flowMat_GPU.download(flowMat)             # <<<<<<<<<<<<<<
@@ -1803,7 +1792,7 @@ static PyObject *__pyx_pf_19cu_tvl1_opticalflow_cudaTVL1OpticalFlowWrapper(CYTHO
  */
   __pyx_v_flowMat_GPU.download(__pyx_v_flowMat);
 
-  /* "cu_tvl1_opticalflow.pyx":26
+  /* "cu_tvl1_opticalflow.pyx":28
  * 
  *     flowMat_GPU.download(flowMat)
  *     flow = <np.ndarray>pyopencv_from(flowMat)             # <<<<<<<<<<<<<<
@@ -1815,7 +1804,7 @@ static PyObject *__pyx_pf_19cu_tvl1_opticalflow_cudaTVL1OpticalFlowWrapper(CYTHO
   __pyx_v_flow = ((PyArrayObject *)__pyx_t_3);
   __pyx_t_3 = 0;
 
-  /* "cu_tvl1_opticalflow.pyx":27
+  /* "cu_tvl1_opticalflow.pyx":29
  *     flowMat_GPU.download(flowMat)
  *     flow = <np.ndarray>pyopencv_from(flowMat)
  *     return flow             # <<<<<<<<<<<<<<
@@ -1825,9 +1814,9 @@ static PyObject *__pyx_pf_19cu_tvl1_opticalflow_cudaTVL1OpticalFlowWrapper(CYTHO
   __pyx_r = ((PyObject *)__pyx_v_flow);
   goto __pyx_L0;
 
-  /* "cu_tvl1_opticalflow.pyx":4
- * cimport numpy as np  # Import numpy C/C++ API
- * from cython.operator cimport dereference
+  /* "cu_tvl1_opticalflow.pyx":6
+ * cdef Ptr[OpticalFlowDual_TVL1] pFlow= OpticalFlowDual_TVL1.create()
+ * 
  * def cudaTVL1OpticalFlowWrapper(np.ndarray[np.uint8_t, ndim=2] prsv,             # <<<<<<<<<<<<<<
  *                                np.ndarray[np.uint8_t, ndim=2] next):
  *     np.import_array()
@@ -4417,7 +4406,6 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_numpy, __pyx_k_numpy, sizeof(__pyx_k_numpy), 0, 0, 1, 1},
   {&__pyx_kp_s_numpy_core_multiarray_failed_to, __pyx_k_numpy_core_multiarray_failed_to, sizeof(__pyx_k_numpy_core_multiarray_failed_to), 0, 0, 1, 0},
   {&__pyx_kp_s_numpy_core_umath_failed_to_impor, __pyx_k_numpy_core_umath_failed_to_impor, sizeof(__pyx_k_numpy_core_umath_failed_to_impor), 0, 0, 1, 0},
-  {&__pyx_n_s_pFlow, __pyx_k_pFlow, sizeof(__pyx_k_pFlow), 0, 0, 1, 1},
   {&__pyx_n_s_prevMat, __pyx_k_prevMat, sizeof(__pyx_k_prevMat), 0, 0, 1, 1},
   {&__pyx_n_s_prevMat_GPU, __pyx_k_prevMat_GPU, sizeof(__pyx_k_prevMat_GPU), 0, 0, 1, 1},
   {&__pyx_n_s_prsv, __pyx_k_prsv, sizeof(__pyx_k_prsv), 0, 0, 1, 1},
@@ -4537,17 +4525,17 @@ static int __Pyx_InitCachedConstants(void) {
   __Pyx_GOTREF(__pyx_tuple__9);
   __Pyx_GIVEREF(__pyx_tuple__9);
 
-  /* "cu_tvl1_opticalflow.pyx":4
- * cimport numpy as np  # Import numpy C/C++ API
- * from cython.operator cimport dereference
+  /* "cu_tvl1_opticalflow.pyx":6
+ * cdef Ptr[OpticalFlowDual_TVL1] pFlow= OpticalFlowDual_TVL1.create()
+ * 
  * def cudaTVL1OpticalFlowWrapper(np.ndarray[np.uint8_t, ndim=2] prsv,             # <<<<<<<<<<<<<<
  *                                np.ndarray[np.uint8_t, ndim=2] next):
  *     np.import_array()
  */
-  __pyx_tuple__10 = PyTuple_Pack(10, __pyx_n_s_prsv, __pyx_n_s_next, __pyx_n_s_prevMat, __pyx_n_s_prevMat_GPU, __pyx_n_s_nextMat, __pyx_n_s_nextMat_GPU, __pyx_n_s_pFlow, __pyx_n_s_flowMat_GPU, __pyx_n_s_flowMat, __pyx_n_s_flow); if (unlikely(!__pyx_tuple__10)) __PYX_ERR(0, 4, __pyx_L1_error)
+  __pyx_tuple__10 = PyTuple_Pack(9, __pyx_n_s_prsv, __pyx_n_s_next, __pyx_n_s_prevMat, __pyx_n_s_prevMat_GPU, __pyx_n_s_nextMat, __pyx_n_s_nextMat_GPU, __pyx_n_s_flowMat_GPU, __pyx_n_s_flowMat, __pyx_n_s_flow); if (unlikely(!__pyx_tuple__10)) __PYX_ERR(0, 6, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__10);
   __Pyx_GIVEREF(__pyx_tuple__10);
-  __pyx_codeobj__11 = (PyObject*)__Pyx_PyCode_New(2, 0, 10, 0, 0, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__10, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_cu_tvl1_opticalflow_pyx, __pyx_n_s_cudaTVL1OpticalFlowWrapper, 4, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__11)) __PYX_ERR(0, 4, __pyx_L1_error)
+  __pyx_codeobj__11 = (PyObject*)__Pyx_PyCode_New(2, 0, 9, 0, 0, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__10, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_cu_tvl1_opticalflow_pyx, __pyx_n_s_cudaTVL1OpticalFlowWrapper, 6, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__11)) __PYX_ERR(0, 6, __pyx_L1_error)
   __Pyx_RefNannyFinishContext();
   return 0;
   __pyx_L1_error:;
@@ -4680,13 +4668,22 @@ PyMODINIT_FUNC PyInit_cu_tvl1_opticalflow(void)
   /* "cu_tvl1_opticalflow.pyx":4
  * cimport numpy as np  # Import numpy C/C++ API
  * from cython.operator cimport dereference
+ * cdef Ptr[OpticalFlowDual_TVL1] pFlow= OpticalFlowDual_TVL1.create()             # <<<<<<<<<<<<<<
+ * 
+ * def cudaTVL1OpticalFlowWrapper(np.ndarray[np.uint8_t, ndim=2] prsv,
+ */
+  __pyx_v_19cu_tvl1_opticalflow_pFlow = cv::cuda::OpticalFlowDual_TVL1::create();
+
+  /* "cu_tvl1_opticalflow.pyx":6
+ * cdef Ptr[OpticalFlowDual_TVL1] pFlow= OpticalFlowDual_TVL1.create()
+ * 
  * def cudaTVL1OpticalFlowWrapper(np.ndarray[np.uint8_t, ndim=2] prsv,             # <<<<<<<<<<<<<<
  *                                np.ndarray[np.uint8_t, ndim=2] next):
  *     np.import_array()
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_19cu_tvl1_opticalflow_1cudaTVL1OpticalFlowWrapper, NULL, __pyx_n_s_cu_tvl1_opticalflow); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 4, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_19cu_tvl1_opticalflow_1cudaTVL1OpticalFlowWrapper, NULL, __pyx_n_s_cu_tvl1_opticalflow); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 6, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_cudaTVL1OpticalFlowWrapper, __pyx_t_1) < 0) __PYX_ERR(0, 4, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_cudaTVL1OpticalFlowWrapper, __pyx_t_1) < 0) __PYX_ERR(0, 6, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
   /* "cu_tvl1_opticalflow.pyx":1

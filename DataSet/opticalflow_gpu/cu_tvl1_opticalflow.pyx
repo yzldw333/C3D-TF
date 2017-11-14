@@ -1,6 +1,8 @@
 import numpy as np  # Import Python functions, attributes, submodules of numpy
 cimport numpy as np  # Import numpy C/C++ API
 from cython.operator cimport dereference
+cdef Ptr[OpticalFlowDual_TVL1] pFlow= OpticalFlowDual_TVL1.create()
+
 def cudaTVL1OpticalFlowWrapper(np.ndarray[np.uint8_t, ndim=2] prsv,
                                np.ndarray[np.uint8_t, ndim=2] next):
     np.import_array()
@@ -14,8 +16,8 @@ def cudaTVL1OpticalFlowWrapper(np.ndarray[np.uint8_t, ndim=2] prsv,
     pyopencv_to(<PyObject*> next, nextMat)
     cdef GpuMat nextMat_GPU
     nextMat_GPU.upload(nextMat)
-    cdef Ptr[OpticalFlowDual_TVL1] pFlow= OpticalFlowDual_TVL1.create()
 
+    global pFlow
 
     cdef GpuMat flowMat_GPU
     cdef Mat flowMat

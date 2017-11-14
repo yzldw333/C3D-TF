@@ -14,23 +14,51 @@ Keys:
 '''
 pFlow = None
 flowBuffer = None
-def calTV1OpticalFlow(prvs,next):
-    import time
-    st = time.time()
-    global pFlow
-    global flowBuffer
-    if prvs is None or next is None or prvs.shape!=next.shape:
-        return None
-    #if pFlow is None:
-    #    pFlow = cv2.DualTVL1OpticalFlow_create()
-    #if flowBuffer is None or flowBuffer.shape != next.shape:
-    #    flowBuffer = np.zeros((next.shape[0],next.shape[1],2),dtype=np.float32)
-    flowBuffer = cu_tvl1_opticalflow.cudaTVL1OpticalFlowWrapper(prvs,next)
-    print(time.time()-st)
-    return flowBuffer.copy()
 
-def calRGBDifference(prvs,next):
-    pass
+def calOpticalFlowAndRGBDifference(left,right):
+    def calTV1OpticalFlow(prvs,next):
+        import time
+        #st = time.time()
+        global pFlow
+        global flowBuffer
+        if prvs is None or next is None or prvs.shape!=next.shape:
+            return None
+        #if pFlow is None:
+        #    pFlow = cv2.DualTVL1OpticalFlow_create()
+        #if flowBuffer is None or flowBuffer.shape != next.shape:
+        #    flowBuffer = np.zeros((next.shape[0],next.shape[1],2),dtype=np.float32)
+        scale_prvs = cv2.resize(prvs,(prvs.shape[1],prvs.shape[0]))
+        scale_next = cv2.resize(next,(next.shape[1],next.shape[0]))
+        flowBuffer = cu_tvl1_opticalflow.cudaTVL1OpticalFlowWrapper(scale_prvs,scale_next)
+        #flowBuffer = cv2.resize(flowBuffer,(next.shape[1],next.shape[0]))
+        #print(time.time()-st)
+        #flowBuffer = cv2.convertScaleAbs(flowBuffer)
+        #flowBuffer[np.abs(flowBuffer) < 10]=0
+        #flowBuffer[:,:,0]-=np.mean(flowBuffer[:,:,0])
+        #flowBuffer[:,:,1]-=np.mean(flowBuffer[:,:,1])
+        return flowBuffer.copy()
+    def calRGBDifference(prvs,next):
+        arr = next-prvs
+        #arr = cv2.convertScaleAbs(arr)
+        return arr
+    def norm(arr):
+        maxx = np.max(arr)
+        minn = np.min(arr)
+        fenmu = maxx - minn
+        if fenmu==0:
+            arr = np.zeros(arr.shape,np.uint8)
+        else:
+            arr = (((arr - minn) / fenmu) * 254).astype(np.uint8)
+        return arr
+    flows = norm(calTV1OpticalFlow(left,right))
+    diff = norm(calRGBDifference(left,right))
+    combine = np.zeros([flows.shape[0],flows.shape[1],3],np.uint8)
+    combine[:,:,:2]=flows[...]
+    combine[:,:,2]=np.ones(diff.shape,np.uint8)*128
+    return combine
+
+    print(flows.shape,diff.shape)
+
 
 def draw_flow(img, flow, step=16):
     h, w = img.shape[:2]
@@ -78,7 +106,7 @@ if __name__ == '__main__':
 
     cam = cv2.VideoCapture(r'E:\dataset\VIVA\01_01_01.avi')  # 读取视频
     #cam = cv2.VideoCapture(0)
-    ret, prev = cam.read()  # 读取视频第一帧作为光流输入的当前帧֡
+    #ret, prev = cam.read()  # 读取视频第一帧作为光流输入的当前帧֡
     # prev = cv2.imread('E:\lena.jpg')
 
     # prevgray = cv2.cvtColor(prev, cv2.COLOR_BGR2GRAY)
@@ -100,17 +128,12 @@ if __name__ == '__main__':
             #flow = np.zeros(shape=(next.shape[0],next.shape[1],2),dtype=np.float32)
             #flow = cv2.CreateMat(3, 3, cv2.CV_32FC2)
             #pFlow.calc(prvs,next,flow)
-            flow = calTV1OpticalFlow(prvs,next)
+            combine = calOpticalFlowAndRGBDifference(prvs,next)
+            prvs = next.copy()
+            cv2.imshow('t',combine)
+            cv2.waitKey(1)
             #flow = cv2.calcOpticalFlowFarneback(prvs, next, None, 0.5, 3, 15,  3, 5, 1.2, 0)
-            mag, ang = cv2.cartToPolar(flow[..., 0], flow[..., 1])
-            hsv[..., 0] = ang * 180 / np.pi / 2
-            hsv[..., 2] = cv2.normalize(mag, None, 0, 255, cv2.NORM_MINMAX)
-            bgr = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
-            cv2.imshow('frame2', bgr)
-            k = cv2.waitKey(10) & 0xff
-            if k == 27:
-                break
-            elif k == ord('s'):
-                cv2.imwrite('opticalfb.png', frame2)
-                cv2.imwrite('opticalhsv.png', bgr)
-            prvs = next
+            #mag, ang = cv2.cartToPolar(flow[..., 0], flow[..., 1])
+            #hsv[..., 0] = ang * 180 / np.pi / 2
+            #hsv[..., 2] = cv2.normalize(mag, None, 0, 255, cv2.NORM_MINMAX)
+            #bgr = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)

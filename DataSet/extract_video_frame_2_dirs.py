@@ -209,8 +209,41 @@ def merge_depth_grad_2_video(depthdir,graddir,outdir):
             jpgpath = os.path.join(tmpdir, '%06d.jpg' % index)
             cv2.imwrite(jpgpath,e)
             index += 1
+
+def CalWriteOpticalFLowAndRGBDifference(rootdir,outdir):
+    from DataSet.OpticalFlow import calOpticalFlowAndRGBDifference
+    lst = os.listdir(rootdir)
+    for e in lst:
+        path = os.path.join(rootdir,e)
+        if os.path.isfile(path) and e.endswith('avi'):
+            cam = cv2.VideoCapture(path)
+            ret, frame1 = cam.read()
+            prvs = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
+            prvs = cv2.resize(prvs,(171,128))
+            buffers = [prvs]
+            while True:
+                ret, frame2 = cam.read()
+                if ret==False:
+                    break
+                next = cv2.cvtColor(frame2,cv2.COLOR_BGR2GRAY)
+                next = cv2.resize(next, (171, 128))
+                buffers.append(next)
+            length = len(buffers)
+            outpath = os.path.join(outdir,e[:-4])
+            if os.path.exists(outpath)==False:
+                os.mkdir(outpath)
+            for i in range(length):
+                if i==0:
+                    prvs=buffers[i]
+                else:
+                    next=buffers[i]
+                    combine=calOpticalFlowAndRGBDifference(prvs,next)
+                    prvs = next
+                    cv2.imwrite(os.path.join(outpath,'%06d.jpg'%(i-1)),combine)
+        print(e)
 if __name__ == '__main__':
-    merge_depth_grad_2_video(r'E:\dataset\VIVA\depth',r'E:\dataset\VIVA',r'E:\dataset\VIVA_avi')
+    CalWriteOpticalFLowAndRGBDifference(r'E:\dataset\VIVA',r'E:\dataset\VIVA_time')
+    #merge_depth_grad_2_video(r'E:\dataset\VIVA\depth',r'E:\dataset\VIVA',r'E:\dataset\VIVA_avi')
     #merge_depth_grad_2_avi(r'E:\dataset\VIVA\01_01_01.avi',r'E:\dataset\VIVA\depth\01_01_01.avi',r'01_01_01_new.avi')
     #extract_frames_2_dirs(r'E:\dataset\VIVA_avi',r'E:\dataset\VIVA_mixjpg')
     #img = cv2.imread(r'E:\dataset\VIVA_mixjpg\01_01_01\000000.jpg')

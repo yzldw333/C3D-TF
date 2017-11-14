@@ -77,20 +77,25 @@ def Compute_Bilinear_intersection(srcImg,posX,posY):
     return value
 
 if __name__ == '__main__':
-    img = cv2.imread(r'D:\test.jpg')
-    # 获取图像尺寸
-    (h, w) = img.shape[:2]
-
-    # 若未指定旋转中心，则将图像中心设为旋转中心
-    center = (w / 2, h / 2)
-
-    # 执行旋转
-    M = cv2.getRotationMatrix2D(center, 30, 1)
-    shift = cv2.warpAffine(img,np.float32([[1,0,30],[0,1,0]]),(w,h))
-    cv2.imshow('t',shift)
+    img = cv2.imread(r'E:\dataset\VIVA_avi_group\VIVA_avi_part0\train\03_01_01\000000.jpg')
+    img = img[:,:,2]
+    img -= np.mean(img)
+    cv2.imshow('t',img)
     cv2.waitKey(0)
-    rotated = cv2.warpAffine(img, M, (w, h))
-    cv2.imshow('t',rotated)
-    cv2.waitKey(0)
-    imglst = [img]
-    a = image_distortion(imglst)
+
+    # # 获取图像尺寸
+    # (h, w) = img.shape[:2]
+    #
+    # # 若未指定旋转中心，则将图像中心设为旋转中心
+    # center = (w / 2, h / 2)
+    #
+    # # 执行旋转
+    # M = cv2.getRotationMatrix2D(center, 30, 1)
+    # shift = cv2.warpAffine(img,np.float32([[1,0,30],[0,1,0]]),(w,h))
+    # cv2.imshow('t',shift)
+    # cv2.waitKey(0)
+    # rotated = cv2.warpAffine(img, M, (w, h))
+    # cv2.imshow('t',rotated)
+    # cv2.waitKey(0)
+    # imglst = [img]
+    # a = image_distortion(imglst)
