@@ -20,17 +20,21 @@ import time
 import numpy
 from six.moves import xrange  # pylint: disable=redefined-builtin
 import tensorflow as tf
+import tensorflow.contrib.slim as slim
 import input_data
 import math
 import numpy as np
-from Net import C3DModel
-from Net import LoadPCKModel
+import sys
+sys.path.append('Net')
+import C3DModel
+import LoadPCKModel
 # Basic model parameters as external flags.
 flags = tf.app.flags
 gpu_num = 1
 #flags.DEFINE_float('learning_rate', 0.0, 'Initial learning rate.')
-flags.DEFINE_integer('max_steps', 70000, 'Number of steps to run trainer.')
-flags.DEFINE_integer('batch_size', 8, 'Batch size.')
+flags.DEFINE_integer('max_steps', 50000, 'Number of steps to run trainer.')
+flags.DEFINE_integer('batch_size', 16, 'Batch size.')
+flags.DEFINE_integer('classes',19,'num of classes')
 FLAGS = flags.FLAGS
 
 MOVING_AVERAGE_DECAY = 0.9999
@@ -80,7 +84,7 @@ def average_gradients(tower_grads):
     for g, _ in grad_and_vars:
       expanded_g = tf.expand_dims(g, 0)
       grads.append(expanded_g)
-    grad = tf.concat(0, grads)
+    grad = tf.concat(grads,0)
     grad = tf.reduce_mean(grad, 0)
     v = grad_and_vars[0][1]
     grad_and_var = (grad, v)
@@ -121,6 +125,36 @@ def cross_entropy_loss(name_scope, logit, labels):
     )
     return cross_entropy_mean
 
+def focal_loss(onehot_labels,logits,alpha=0.25,gamma=2.0,name=None,scope=None):
+    """
+    logits and onehot_labels must have same shape[batchsize,num_classes] and the same data type(float16 32 64)
+    Args:
+        onehot_labels: [batchsize,classes]
+        logits: Unscaled log probabilities(tensor)
+        alpha: The hyperparameter for adjusting biased samples, default is 0.25
+        gamma: The hyperparameter for penalizing the easy labeled samples
+        name: A name for the operation(optional)
+
+    Returns:
+      A 1-D tensor of length batch_size of same type as logits with softmax focal loss
+    """
+    precise_logits = tf.cast(logits,tf.float32) if (
+            logits.dtype==tf.float16) else logits
+    onehot_labels = tf.cast(onehot_labels, precise_logits.dtype)
+    predictions = tf.nn.softmax(precise_logits)
+    predictions_pt = tf.where(tf.equal(onehot_labels,1),predictions,1.-predictions)
+    epsilon = 1e-8
+    alpha_t = tf.scalar_mul(alpha,tf.ones_like(onehot_labels,dtype=tf.float32))
+    alpha_t = tf.where(tf.equal(onehot_labels,1.0),alpha_t,1-alpha_t)
+    losses = tf.reduce_mean(-alpha_t*tf.pow(1.-predictions_pt,gamma)*onehot_labels*tf.log(predictions_pt+epsilon),
+            name=name)
+    #tf.summary.scalar(
+    #    scope + '-focal_loss',
+    #    losses
+    #)
+    return losses
+
+
 def tower_acc(logit, labels):
   correct_pred = tf.equal(tf.argmax(logit, 1), labels)
   accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
@@ -146,7 +180,7 @@ def run_training():
   if not os.path.exists(model_save_dir):
       os.makedirs(model_save_dir)
   use_pretrained_model = True
-  model_filename = "./models/c3d_ucf_model-41000"
+  model_filename = "./models/c3d_ucf_model-5000"
   model_filename = ""
   if len(model_filename)!=0:
     start_steps=int(model_filename.strip().split('-')[-1])
@@ -169,14 +203,15 @@ def run_training():
     logits = []
     base_lr = 0.0002
     learning_rate = tf.Variable(base_lr,trainable=False)
-    opt1 = tf.train.AdamOptimizer(learning_rate)
-    opt2 = tf.train.AdamOptimizer(learning_rate*2)
-    #opt1 = tf.train.MomentumOptimizer(learning_rate,0.9,use_nesterov=True)
-    #opt2 = tf.train.MomentumOptimizer(learning_rate,0.9,use_nesterov=True)
+    reused=False
     for gpu_index in range(0, gpu_num):
       with tf.device('/gpu:%d' % gpu_index):
         with tf.name_scope('%s-%d' % ('ludongwei-pc', gpu_index)) as scope:
-          with tf.variable_scope('var_name') as var_scope:
+          with tf.variable_scope('var_name',reuse=False) as var_scope:
+            opt1 = tf.train.AdamOptimizer(learning_rate)
+            opt2 = tf.train.AdamOptimizer(learning_rate)
+            #opt1 = tf.train.MomentumOptimizer(learning_rate,0.9,use_nesterov=True)
+            #opt2 = tf.train.MomentumOptimizer(learning_rate,0.9,use_nesterov=True)
             weights = {
               'wc0': _variable_on_cpu('wc0', [1, 1, 1, 16,16], tf.constant_initializer(1/16.0)),
               'wc1': _variable_with_weight_decay('wc1', [3, 3, 3, 3, 64], 0.0005),
@@ -199,28 +234,37 @@ def run_training():
               'bd2': _variable_with_weight_decay('bd2', [2048], 0.000),
               'out': _variable_with_weight_decay('bout', [C3DModel.NUM_CLASSES], 0.000),
               }
-          varlist1 = weights.values()
-          varlist2 = biases.values()
-          logit = C3DModel.inference_c3d(
-                          images_placeholder[gpu_index * FLAGS.batch_size:(gpu_index + 1) * FLAGS.batch_size,:,:,:,:],
-                          0.5,
-                          FLAGS.batch_size,
-                          weights,
-                          biases
-                          )
-          loss = cross_entropy_loss(
-                          scope,
-                          logit,
-                          labels_placeholder[gpu_index * FLAGS.batch_size:(gpu_index + 1) * FLAGS.batch_size]
-                          )
-          tf.summary.scalar(name='loss', tensor=loss)
-          grads1 = opt1.compute_gradients(loss, varlist1)
-          grads2 = opt2.compute_gradients(loss, varlist2)
-          tower_grads1.append(grads1)
-          tower_grads2.append(grads2)
-          logits.append(logit)
-          tf.get_variable_scope().reuse_variables()
-    logits = tf.concat(0, logits)
+            reuse=True
+            varlist1 = weights.values()
+            varlist2 = biases.values()
+            logit = C3DModel.inference_c3d(
+                            images_placeholder[gpu_index * FLAGS.batch_size:(gpu_index + 1) * FLAGS.batch_size,:,:,:,:],
+                            0.5,
+                            FLAGS.batch_size,
+                            weights,
+                            biases
+                            )
+            #loss = cross_entropy_loss(
+            #                scope,
+            #                logit,
+            #                labels_placeholder[gpu_index * FLAGS.batch_size:(gpu_index + 1) * FLAGS.batch_size]
+            #                )
+            one_hot_labels = slim.one_hot_encoding(labels_placeholder[gpu_index*FLAGS.batch_size:(gpu_index+1)*FLAGS.batch_size] , FLAGS.classes)
+            loss = focal_loss(
+                    one_hot_labels,
+                    logit,
+                    alpha=1,
+                    name="focal_loss",
+                    scope=scope
+                    )
+            tf.get_variable_scope().reuse_variables()
+            tf.summary.scalar(name='loss', tensor=loss)
+            grads1 = opt1.compute_gradients(loss, varlist1)
+            grads2 = opt2.compute_gradients(loss, varlist2)
+            tower_grads1.append(grads1)
+            tower_grads2.append(grads2)
+            logits.append(logit)
+    logits = tf.concat(logits,0)
 
     accuracy = tower_acc(logits, labels_placeholder)
     tf.summary.scalar('accuracy', accuracy)
@@ -259,9 +303,9 @@ def run_training():
 
     merged = tf.summary.merge_all()
 
-    #sess.run(tf.assign(learning_rate,0.00008))
+    #sess.run(tf.assign(learning_rate,0.005))
 
-    train_writer = tf.summary.FileWriter('./visual_logs/train/attention', sess.graph)
+    train_writer = tf.summary.FileWriter('./visual_logs/train', sess.graph)
     next_batch_start = -1
     last_acc = 0
     lines=None
@@ -269,16 +313,16 @@ def run_training():
     losses=5
     for step in xrange(start_steps,FLAGS.max_steps):
         start_time = time.time()
-        if epoch>=20:
+        if epoch>=10:
             # open data augmentation
             status = 'TRAIN'
         else:
             # close data augmentation
-            status = 'TEST' 
+            status = 'TEST'
         startprocess_time = time.time()
         train_images, train_labels, next_batch_start, _, _,lines = input_data.read_clip_and_label(
-                        rootdir = 'E:\\dataset\\VIVA_avi_group\\VIVA_avi_part0\\train',
-                        filename='E:\\dataset\\VIVA_avi_group\\VIVA_avi_part0\\gen_train_shuffle.txt',
+                        rootdir = '../VIVA_avi_group/VIVA_avi_part2/train',
+                        filename='../VIVA_avi_group/VIVA_avi_part2/gen_train_shuffle.txt',
                         batch_size=FLAGS.batch_size * gpu_num,
                         lines=lines,
                         start_pos=next_batch_start,
@@ -297,7 +341,7 @@ def run_training():
         train_writer.add_summary(summary, step)
         duration = time.time() - start_time
         print('Epoch: %d Step %d: %.3f sec' % (epoch, step, duration))
-        print ("lr:%f "%sess.run(learning_rate)+"loss: " + "{:.4f}".format(losses))
+        print ("lr:%f "%sess.run(learning_rate)+"loss: " + "{:.8f}".format(losses))
         # Save a checkpoint and evaluate the model periodically.
         if step%1000==0 and step!=0 and step!=start_steps or step+1 == FLAGS.max_steps:
             saver.save(sess, os.path.join(model_save_dir, 'c3d_ucf_model'), global_step=step)
@@ -309,7 +353,7 @@ def run_training():
                 print("Learning Done.")
                 break
 
-            if epoch%40==0 and epoch!=0:
+            if epoch%10==0 and epoch!=0:
                 # test
                 test_batch_start = -1
                 sum_acc=0
@@ -317,8 +361,8 @@ def run_training():
                 while True:
                     test_lines = None
                     val_images, val_labels, test_batch_start, _, _,test_lines = input_data.read_clip_and_label(
-                        rootdir='E:\\dataset\\VIVA_avi_group\\VIVA_avi_part0\\val',
-                        filename='E:\\dataset\\VIVA_avi_group\\VIVA_avi_part0\\val.txt',
+                        rootdir='../VIVA_avi_group/VIVA_avi_part2/val',
+                        filename='../VIVA_avi_group/VIVA_avi_part2/val.txt',
                         batch_size=1 * gpu_num,
                         lines=test_lines,
                         start_pos=test_batch_start,
@@ -341,12 +385,12 @@ def run_training():
                         acc = sum_acc*1.0/total_num
                         print('Epoch: %d test accuracy: %f'%(epoch,acc))
                         break
-                if acc<last_acc*1.1:
+                if acc<last_acc*1.03:
                     learning_rate_value = sess.run(learning_rate)
                     learning_rate_value *= 0.5
                     assign_op = tf.assign(learning_rate,learning_rate_value)
                     sess.run(assign_op)
-                    print("acc:%f < last_acc*1.1:%f"%(acc,last_acc*1.1))
+                    print("acc:%f < last_acc*1.1:%f"%(acc,last_acc*1.05))
                     #print("learning_rate changed to %f"%sess.run(learning_rate))
                 last_acc = acc
     print("Done")
@@ -361,7 +405,7 @@ def run_testing():
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
     use_pretrained_model = True
-    model_filename = "./models/c3d_ucf_model-41000"
+    model_filename = "./models/c3d_ucf_model-29000"
     pckmodel_filename = "./c3d.model"
     graph = tf.Graph()
     with graph.as_default():
@@ -375,10 +419,11 @@ def run_testing():
             1 * gpu_num
         )
         logits = []
+        reused=False
         for gpu_index in range(0, gpu_num):
             with tf.device('/gpu:%d' % gpu_index):
                 with tf.name_scope('%s_%d' % ('dextro-research', gpu_index)) as scope:
-                    with tf.variable_scope('var_name') as var_scope:
+                    with tf.variable_scope('var_name',reuse=reused) as var_scope:
                         weights = {
                             'wc1': _variable_with_weight_decay('wc1', [3, 3, 3, 3, 64], 0.0005),
                             'wc2': _variable_with_weight_decay('wc2', [3, 3, 3, 64, 128], 0.0005),
@@ -407,9 +452,10 @@ def run_testing():
                         biases
                     )
                     logits.append(logit)
+                    reused=True
                     tf.get_variable_scope().reuse_variables()
-        logits = tf.concat(0, logits)
-        predict_value = tf.argmax(logit, 1)
+        logits = tf.concat(logits,0)
+        predict_value = tf.argmax(logits, 1)
         accuracy = tower_acc(logits, labels_placeholder)
         tf.summary.scalar('accuracy', accuracy)
 
@@ -430,7 +476,7 @@ def run_testing():
             print("Model Reading!")
             pass
         elif os.path.exists(pckmodel_filename) and use_pretrained_model:
-            LoadPCKModel.load(weights, biases, pckmodel_filename)
+            LoadPCKModel.load(sess,weights, biases, pckmodel_filename)
 
         # Create summary writter
 
@@ -448,8 +494,8 @@ def run_testing():
             print('Step %d: %.3f sec' % (step, duration))
 
             val_images, val_labels, next_batch_start, _, _,lines = input_data.read_clip_and_label(
-                rootdir='E:\\dataset\\VIVA_avi_group\\VIVA_avi_part0\\val',
-                filename='E:\\dataset\\VIVA_avi_group\\VIVA_avi_part0\\val.txt',
+                rootdir='../VIVA_avi_group/VIVA_avi_part0/val',
+                filename='../VIVA_avi_group/VIVA_avi_part0/val.txt',
                 batch_size=1 * gpu_num,
                 lines=lines,
                 start_pos=next_batch_start,
