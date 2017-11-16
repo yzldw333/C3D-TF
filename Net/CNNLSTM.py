@@ -1,6 +1,6 @@
 import tensorflow as tf
-from Net.resnet50 import *
-from Net.utils import *
+from resnet50 import *
+from utils import *
 # classes
 NUM_CLASSES = 19
 
@@ -10,7 +10,6 @@ WIDTH = 224
 HEIGHT = 224
 CHANNELS = 3
 
-hidden_size = 50
 
 # Number of frames per video clip
 NUM_FRAMES_PER_CLIP = 4
@@ -29,6 +28,7 @@ def inference_resnet_lstm(batchsize,time_steps=4,hidden_size=50,classes=19):
     #lr = tf.placeholder(dtype=tf.float32,name="learning_rate")
     features,block4 = resnet50_BVLC(X,output_dim=50,no_top=False,train_phase=True)
     features = tf.reshape(features,[-1,time_steps,50])
+    print(features.shape)
     # last node's output
     output = lstm(x=features,hidden_size=hidden_size,batchsize=batchsize)
     logits = fc(output,input_dim=hidden_size,output_dim=classes,name="fc_logits")
