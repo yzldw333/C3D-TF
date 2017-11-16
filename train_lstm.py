@@ -3,10 +3,11 @@ from Net import CNNLSTM,resnet50
 import input_data
 import tensorflow as tf
 import numpy as np,time,os
+import cv2
 # predefine
 model_save_dir="./models"
 use_pretrained_model=True
-batchsize=12
+batchsize=6
 time_steps=4
 hidden_size=50
 classes=19
@@ -32,6 +33,16 @@ def train(train_root,train_txt,valid_root,valid_txt):
     saver = tf.train.Saver()
     init = tf.global_variables_initializer()
     load_op = resnet50.load_pretrained_model_ops()
+    visualize_imgs = tf.slice(X, [0, 0, 0, 0],
+                              [1,
+                               CNNLSTM.HEIGHT,
+                               CNNLSTM.WIDTH,
+                               CNNLSTM.CHANNELS]
+                              )
+    visualize_imgs = tf.reshape(visualize_imgs, [CNNLSTM.NUM_FRAMES_PER_CLIP,
+                                                 CNNLSTM.HEIGHT,
+                                                 CNNLSTM.WIDTH,
+                                                 CNNLSTM.CHANNELS])
     #tf.summary.image('input_images', X, 4)
     merged = tf.summary.merge_all()
 
@@ -71,6 +82,9 @@ def train(train_root,train_txt,valid_root,valid_txt):
                             shuffle=False,
                             phase=status
                             )
+            for i in range(CNNLSTM.NUM_FRAMES_PER_CLIP):
+                cv2.imshow(train_images[0,i,:,:,:])
+                cv2.waitKey(0)
             train_images = train_images.reshape([-1,CNNLSTM.HEIGHT,CNNLSTM.WIDTH,CNNLSTM.CHANNELS])
             endprocess_time = time.time()
             preprocess_time = ((endprocess_time-startprocess_time)/(batchsize*1))
