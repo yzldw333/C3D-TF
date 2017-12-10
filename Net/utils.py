@@ -20,12 +20,23 @@ def conv(X,Input_dim,Output_dim,name,stride_size,kernel_size,padding):
         b=bias([Output_dim],'b')
         return tf.nn.conv2d(X,W,strides=[1,stride_size,stride_size,1],padding=padding)+b
 
+def depthwise_pointwise_Conv(X, Input_dim,output_dim,name,stride_size,kernel_size,padding,train_phase=True):
+    with tf.Variable_scope(name) as scope:
+        dW=weights([kernel_size,kernel_size,Input_dim,1],'depth_W')
+        depthwise_conv=tf.nn.relu(BatchNorm(tf.nn.depthwise_conv2d(X,dW,strides=[1,stride_size,stride_size,1],padding=padding),train_phase=train_phase,scope_bn='bn_'+name))
+        
+
+        pW=weights([1,1,Input_dim,output_dim],'point_W')
+        pointwise_conv=conv(depthwise_conv,input_dim,output_dim,stride_size=1,kernel_size=1,padding=padding)
+        return tf.nn.relu(BatchNorm(pointwise_conv,train_phase=train_phase,scope_bn='bn_'+name))
 
 
 
 def MaxPooling(X,ksize,stride,padding,name):
     return tf.nn.max_pool(X,ksize=ksize,strides=[1,stride,stride,1],padding=padding,name=name)
 
+def AvgPooling(X,ksize,stride,padding,name):
+    return tf.nn.avg_pool(X,ksize=ksize,strides=[1,stride,stride,1],padding=padding,name=name)
 def pooling_1x1(Input,input_dim,output_dim,padding,name,stride=2):
     W=weights([1,1,input_dim,output_dim],'pool_w')
     return tf.nn.conv2d(Input,filter=W,strides=[1,stride,stride,1],padding=padding,name=name)
