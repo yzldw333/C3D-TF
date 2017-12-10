@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*- 
 import tensorflow as tf
 from tensorflow.contrib.layers import  batch_norm
 
@@ -32,27 +33,9 @@ def pooling_1x1(Input,input_dim,output_dim,padding,name,stride=2):
 def pooling_3x3(input,name,stride=2,kernel_size=3):
     return tf.nn.max_pool(input,[1,kernel_size,kernel_size,1],strides=[1,stride,stride,1],padding='SAME',name=name)
 
-# def BatchNorm(x, train_phase, scope_bn):
-#     with tf.variable_scope(scope_bn):
-#         beta=tf.get_variable(name='beta',shape=[x.shape[-1]],dtype=tf.float32,initializer=tf.constant_initializer(0),trainable=True)
-#         gamma=tf.get_variable(name='gamma',shape=[x.shape[-1]],dtype=tf.float32,initializer=tf.constant_initializer(1.0),trainable=True)
-#         axises = np.arange(len(x.shape) - 1)
-#         batch_mean, batch_var = tf.nn.moments(x, list(axises), name='moments') #计算均值和方差
-#         ema = tf.train.ExponentialMovingAverage(decay=0.9)
-#
-#         def mean_var_with_update():
-#             ema_apply_op = ema.apply([batch_mean, batch_var])  #让batch_mean和batch_var衰减 进入一个的新的值的时候之前的mean和var成为shadow variabel保留一部分的值衰减decay大小，新的保留一部分
-#             with tf.control_dependencies([ema_apply_op]):
-#                 return tf.identity(batch_mean), tf.identity(batch_var)  #identity  tensor 的复制
-#
-#         mean, var = tf.cond(train_phase, mean_var_with_update,
-#                             lambda: (ema.average(batch_mean), ema.average(batch_var))) #pred,true_fn,fasle_fn  average只是取出average里面的值
-#         normed = tf.nn.batch_normalization(x, mean, var, beta, gamma, 1e-3)
-#     return normed
 
 
 def BatchNorm(input,train_phase,scope_bn):
-    #暂且先不设置updates_collections=None,使用control_dependencies去控制更新参数，
     return batch_norm(input,decay=0.99,center=True,scale=True,is_training=train_phase,scope=scope_bn)
 
 def fc(input,input_dim,output_dim,name):

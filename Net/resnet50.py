@@ -1,4 +1,4 @@
-from Net.utils import *
+from utils import *
 def resnet50(X,output_dim=1024,train_phase=True,no_top=False):
 
     conv1=conv(X,3,64,'conv1',stride_size=2,kernel_size=7,padding='SAME')
