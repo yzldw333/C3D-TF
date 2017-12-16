@@ -14,21 +14,20 @@ def weights(shape,name,is_train=True):
 def bias(shape,name,is_train=True):
     return tf.get_variable(name,shape,dtype=tf.float32,initializer=tf.constant_initializer(0.0),trainable=is_train)
 
-def conv(X,Input_dim,Output_dim,name,stride_size,kernel_size,padding):
+def conv(X,Input_dim,Output_dim,name,stride_size,kernel_size,padding,wd=0):
     with tf.variable_scope(name) as scope:
         W=weights([kernel_size,kernel_size,Input_dim,Output_dim],'W')
+        weight_decay = tf.multiply(tf.nn.l2_loss(W),wd/2.)
+        tf.add_to_collection('weight_decay_loss',weight_decay)
         b=bias([Output_dim],'b')
         return tf.nn.conv2d(X,W,strides=[1,stride_size,stride_size,1],padding=padding)+b
 
-def depthwise_pointwise_Conv(X, Input_dim,output_dim,name,stride_size,kernel_size,padding,train_phase=True):
-    with tf.Variable_scope(name) as scope:
-        dW=weights([kernel_size,kernel_size,Input_dim,1],'depth_W')
-        depthwise_conv=tf.nn.relu(BatchNorm(tf.nn.depthwise_conv2d(X,dW,strides=[1,stride_size,stride_size,1],padding=padding),train_phase=train_phase,scope_bn='bn_'+name))
-        
-
-        pW=weights([1,1,Input_dim,output_dim],'point_W')
-        pointwise_conv=conv(depthwise_conv,input_dim,output_dim,stride_size=1,kernel_size=1,padding=padding)
-        return tf.nn.relu(BatchNorm(pointwise_conv,train_phase=train_phase,scope_bn='bn_'+name))
+def depthwise_pointwise_Conv(X, input_dim,output_dim,dw_name,dw_bn_name,pw_name,pw_bn_name,stride_size,kernel_size,padding,train_phase=True):
+    with tf.variable_scope(dw_name) as scope:
+        dW=weights([kernel_size,kernel_size,input_dim,1],'depthwise_kernel')
+    depthwise_conv=tf.nn.relu(BatchNorm(tf.nn.depthwise_conv2d(X,dW,name=dw_name,strides=[1,stride_size,stride_size,1],padding=padding),train_phase=train_phase,scope_bn=dw_bn_name))
+    pointwise_conv=conv(depthwise_conv,input_dim,output_dim,name=pw_name,stride_size=1,kernel_size=1,padding='VALID',wd=5e-4)
+    return tf.nn.relu(BatchNorm(pointwise_conv,train_phase=train_phase,scope_bn=pw_bn_name))
 
 
 
@@ -49,9 +48,11 @@ def pooling_3x3(input,name,stride=2,kernel_size=3):
 def BatchNorm(input,train_phase,scope_bn):
     return batch_norm(input,decay=0.99,center=True,scale=True,is_training=train_phase,scope=scope_bn)
 
-def fc(input,input_dim,output_dim,name):
-    with tf.variable_scope(name):
+def fc(input,input_dim,output_dim,name,wd=0):
+    with tf.variable_scope(name) as scope:
         W=weights([input_dim,output_dim],'W')
+        weight_decay = tf.multiply(tf.nn.l2_loss(W),wd/2.)
+        tf.add_to_collection('weight_decay_loss',weight_decay)
         b=bias([output_dim],'b')
         return tf.matmul(input,W)+b
 

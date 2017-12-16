@@ -1,4 +1,5 @@
 import tensorflow as tf
+from mobilenet import *
 from resnet50 import *
 from utils import *
 # classes
@@ -54,8 +55,11 @@ def inference_mobilenet_lstm(batchsize,time_steps=4,hidden_size=50,classes=19,lo
     X = tf.placeholder(dtype=tf.float32,shape=[None,HEIGHT,WIDTH,CHANNELS],name="input")
     Y = tf.placeholder(dtype=tf.int64,shape=[None],name="label")
     #lr = tf.placeholder(dtype=tf.float32,name="learning_rate")
-    features,block4 = mobilenet_v1(X,num_classes=19,dropout_keep_prob=0.999,is_training=True,min_depth=8)
+
+    endpoints = mobilenet(X,output_dim=hidden_size,train_phase=True,no_top=False)
+    features = endpoints[-1]
     features = tf.reshape(features,[-1,time_steps,hidden_size])
+    endpoints.append(features)
     print(features.shape)
     # last node's output
     output = lstm(x=features,hidden_size=hidden_size,batchsize=batchsize)
@@ -70,11 +74,12 @@ def inference_mobilenet_lstm(batchsize,time_steps=4,hidden_size=50,classes=19,lo
     else:
         loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits,labels=Y,name='hard_loss')
         mean_loss = tf.reduce_mean(loss)
+
     predict = tf.nn.softmax(logits,name="predict")
 
     correct_pred = tf.equal(tf.argmax(predict, 1), Y)
     accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
-    return X,Y,predict,mean_loss,accuracy
+    return X,Y,endpoints,features,predict,mean_loss,accuracy
 
 
 def inference_resnet_lstm(batchsize,time_steps=4,hidden_size=50,classes=19,loss='focal_loss'):
