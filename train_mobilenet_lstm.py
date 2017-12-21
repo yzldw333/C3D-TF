@@ -14,7 +14,7 @@ batchsize=48
 time_steps=6
 hidden_size=150
 classes=19
-max_steps=30000
+max_steps=40000
 
 
 def train(train_root,train_txt,valid_root,valid_txt):
@@ -33,7 +33,7 @@ def train(train_root,train_txt,valid_root,valid_txt):
             hidden_size=hidden_size,
             classes=classes,
             loss='softmax_loss')
-    learning_rate_value = 0.0001
+    learning_rate_value = 0.0002
     learning_rate = tf.Variable(learning_rate_value, trainable=False)
     optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
     weight_decay_loss = tf.add_n(tf.get_collection('weight_decay_loss'))
@@ -47,6 +47,7 @@ def train(train_root,train_txt,valid_root,valid_txt):
 
     with tf.Session(config=tf.ConfigProto(
         allow_soft_placement=True
+        #gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.9)
         ),graph=graph) as sess:
         sess.run(init)
         if model_filename == "":
@@ -118,7 +119,7 @@ def train(train_root,train_txt,valid_root,valid_txt):
                 epoch+=1
                 summ_loss=0
                 epoch_steps=0
-                if epoch==350:
+                if epoch==450:
                     print("Learning Done.")
                     break
 
@@ -142,7 +143,7 @@ def train(train_root,train_txt,valid_root,valid_txt):
                             phase='TEST'
                         )
                         val_images=np.array([val_images[0,:]]*batchsize,dtype=np.float32)
-                        val_labels=np.array([val_labels]*batchsize,dtype=np.float32).ravel()
+                        val_labels=np.array([val_labels]*batchsize,dtype=np.int64).ravel()
                         val_images = val_images.reshape([-1,CNNLSTM.HEIGHT,CNNLSTM.WIDTH,CNNLSTM.CHANNELS])
                         [acc] = sess.run(
                             [ accuracy],
@@ -182,6 +183,6 @@ def train(train_root,train_txt,valid_root,valid_txt):
 
 
 if __name__ == '__main__':
-    train(train_root='../VIVA_avi_group/VIVA_avi_part2/train',train_txt='../VIVA_avi_group/VIVA_avi_part2/gen_train_shuffle.txt',
-        valid_root='../VIVA_avi_group/VIVA_avi_part2/val',valid_txt='../VIVA_avi_group/VIVA_avi_part2/val.txt')
+    train(train_root='../VIVA_avi_group/VIVA_avi_part7/train',train_txt='../VIVA_avi_group/VIVA_avi_part7/gen_train_shuffle.txt',
+        valid_root='../VIVA_avi_group/VIVA_avi_part7/val',valid_txt='../VIVA_avi_group/VIVA_avi_part7/val.txt')
 

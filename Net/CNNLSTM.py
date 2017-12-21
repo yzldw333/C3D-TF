@@ -50,13 +50,13 @@ def lstm(x,hidden_size,batchsize):
     outputs, states = tf.nn.dynamic_rnn(cell=lstm_cell, inputs=x, time_major=False,initial_state=init_state)
     return outputs
 
-def inference_mobilenet_lstm(batchsize,time_steps=4,hidden_size=50,classes=19,loss='focal_loss'):
+def inference_mobilenet_lstm(batchsize,time_steps=4,hidden_size=50,classes=19,loss='focal_loss',train_phase=True):
     # in X, batchsize = origin_batchsize*time_step
     X = tf.placeholder(dtype=tf.float32,shape=[None,HEIGHT,WIDTH,CHANNELS],name="input")
     Y = tf.placeholder(dtype=tf.int64,shape=[None],name="label")
     #lr = tf.placeholder(dtype=tf.float32,name="learning_rate")
 
-    endpoints = mobilenet(X,output_dim=hidden_size,train_phase=True,no_top=False)
+    endpoints = mobilenet(X,output_dim=hidden_size,train_phase=train_phase,no_top=False)
     features = endpoints[-1]
     features = tf.reshape(features,[-1,time_steps,hidden_size])
     endpoints.append(features)
@@ -76,18 +76,19 @@ def inference_mobilenet_lstm(batchsize,time_steps=4,hidden_size=50,classes=19,lo
         mean_loss = tf.reduce_mean(loss)
 
     predict = tf.nn.softmax(logits,name="predict")
+    predict = tf.argmax(predict, 1)
 
-    correct_pred = tf.equal(tf.argmax(predict, 1), Y)
+    correct_pred = tf.equal(predict, Y)
     accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
     return X,Y,endpoints,features,predict,mean_loss,accuracy
 
 
-def inference_resnet_lstm(batchsize,time_steps=4,hidden_size=50,classes=19,loss='focal_loss'):
+def inference_resnet_lstm(batchsize,time_steps=4,hidden_size=50,classes=19,loss='focal_loss',train_phase=True):
     # in X, batchsize = origin_batchsize*time_step
     X = tf.placeholder(dtype=tf.float32,shape=[None,HEIGHT,WIDTH,CHANNELS],name="input")
     Y = tf.placeholder(dtype=tf.int64,shape=[None],name="label")
     #lr = tf.placeholder(dtype=tf.float32,name="learning_rate")
-    features,block4 = resnet50_BVLC(X,output_dim=hidden_size,no_top=False,train_phase=True)
+    features,block4 = resnet50_BVLC(X,output_dim=hidden_size,no_top=False,train_phase=train_phase)
     features = tf.reshape(features,[-1,time_steps,hidden_size])
     print(features.shape)
     # last node's output
@@ -104,8 +105,9 @@ def inference_resnet_lstm(batchsize,time_steps=4,hidden_size=50,classes=19,loss=
         loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits,labels=Y,name='hard_loss')
         mean_loss = tf.reduce_mean(loss)
     predict = tf.nn.softmax(logits,name="predict")
+    predict = tf.argmax(predict, 1)
 
-    correct_pred = tf.equal(tf.argmax(predict, 1), Y)
+    correct_pred = tf.equal(predict, Y)
     accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
     return X,Y,predict,mean_loss,accuracy
 
