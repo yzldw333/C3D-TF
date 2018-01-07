@@ -26,10 +26,12 @@ Here is the file.
         - utils.py -> some common interface for tf
     - demo.py -> demo for real-time video process
     - input_data.py -> data process when training or testing
-    - preprocess.py ->
+    - preprocess.py -> img distortion function, which is not used now.
     - test.py -> VIVA Gesture dataset test
     - train_c3d_ucf101.py -> c3d training process
     - train_lstm.py/train_resnet_lstm.py -> train resnet+lstm training process
     - train_mobilenet_lstm.py -> mobilenet+lstm training process
 
-
+# How to use my scripts?
+1. if you use VIVA Gesture Dataset, use scripts under DataSet to perform offline dataset process, otherwise, you should write codes yourself to process Dataset, and use function in extract_video_frame_2_dirs.py
+2. Then use train_*.py to train our models. If you want to change the model, please refer CNNLSTM.py and resnet50.py
