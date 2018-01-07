@@ -1,6 +1,9 @@
 from utils import *
 def resnet50(X,output_dim=1024,train_phase=True,no_top=False):
-
+    '''
+        written by Wu Fan.
+        Modified function resnet50_BVLC which changed model definition name to keep the same as BVLC's model is shown below
+    '''
     conv1=conv(X,3,64,'conv1',stride_size=2,kernel_size=7,padding='SAME')
     #print('conv1',conv1)
     pooling1=pooling_3x3(conv1,'pooling1')
@@ -101,6 +104,15 @@ def resnet50(X,output_dim=1024,train_phase=True,no_top=False):
         return fc_out,block4
 
 def resnet50_BVLC(X,output_dim=1024,train_phase=True,no_top=False):
+    '''
+        resnet50_BVLC model definition
+        params:
+        X:              tf.placeholder
+        output_dim:     output dimension of the last fc layer
+        train_phase:    for Batch Normalization Layer
+        no_top:         if true, return average pooling layer,
+                        else, return fc layer.
+    '''
 
     conv1=conv(X,3,64,'conv1',stride_size=2,kernel_size=7,padding='SAME')
     conv1=tf.nn.relu(BatchNorm(conv1,train_phase,'bn_conv1'))
@@ -204,6 +216,13 @@ def resnet50_BVLC(X,output_dim=1024,train_phase=True,no_top=False):
         return fc_out,block4
 
 def load_pretrained_resnet50_model_ops(model='resnet50_weights_tf_dim_ordering_tf_kernels.h5'):
+    '''
+        return operations of loading resnet model parameters.
+        using like: ops = load_pretrained_resnet50_model_ops()
+                    ...
+                    ...
+                    sess.run(ops)
+    '''
     import h5py
     file = h5py.File(model)
     vars = tf.global_variables()

@@ -15,6 +15,12 @@ hidden_size=150
 classes=19
 predict_arr = None
 def test(valid_root,valid_txt):
+    '''
+        test function
+        params:
+        valid_root: dataset root
+        valid_txt:  data label file
+    '''
     global model_filename
     global predict_arr
     if model_filename=="":

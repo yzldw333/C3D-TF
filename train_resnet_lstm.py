@@ -18,6 +18,14 @@ max_steps=30000
 
 
 def train(train_root,train_txt,valid_root,valid_txt):
+    '''
+        train function
+        params:
+        train_root:     training dataset root
+        train_txt:      training data label file
+        valid_root:     validation dataset rootdir
+        valid_txt:      validation data label file
+    '''
   if not os.path.exists(model_save_dir):
       os.makedirs(model_save_dir)
   model_filename = "./models/resnet50_lstm_model-18000"
@@ -169,4 +177,3 @@ def train(train_root,train_txt,valid_root,valid_txt):
 if __name__ == '__main__':
     train(train_root='../VIVA_avi_group/VIVA_avi_part7/train',train_txt='../VIVA_avi_group/VIVA_avi_part7/gen_train_shuffle.txt',
         valid_root='../VIVA_avi_group/VIVA_avi_part7/val',valid_txt='../VIVA_avi_group/VIVA_avi_part7/val.txt')
-
