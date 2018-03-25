@@ -191,7 +191,7 @@ def read_clip_and_label(rootdir,filename,batch_size, lines=None,start_pos=-1, nu
 
 
 if __name__ == '__main__':
-  tmp_data, _ = get_frames_data(r'E:\dataset\VIVA_avi_group\VIVA_avi_part0\train\03_01_01', 16,temporal_elastic_deformation=True) 
+  tmp_data, _ = get_frames_data(r'E:\dataset\VIVA_avi_group\VIVA_avi_part0\train\03_01_01', 8,temporal_elastic_deformation=False)
   for e in tmp_data:
     import cv2
     cv2.imshow('t',e)
