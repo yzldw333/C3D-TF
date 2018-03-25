@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*- 
 import tensorflow as tf
 from tensorflow.contrib.layers import  batch_norm
 
@@ -13,18 +14,28 @@ def weights(shape,name,is_train=True):
 def bias(shape,name,is_train=True):
     return tf.get_variable(name,shape,dtype=tf.float32,initializer=tf.constant_initializer(0.0),trainable=is_train)
 
-def conv(X,Input_dim,Output_dim,name,stride_size,kernel_size,padding):
+def conv(X,Input_dim,Output_dim,name,stride_size,kernel_size,padding,wd=0):
     with tf.variable_scope(name) as scope:
         W=weights([kernel_size,kernel_size,Input_dim,Output_dim],'W')
+        weight_decay = tf.multiply(tf.nn.l2_loss(W),wd/2.)
+        tf.add_to_collection('weight_decay_loss',weight_decay)
         b=bias([Output_dim],'b')
         return tf.nn.conv2d(X,W,strides=[1,stride_size,stride_size,1],padding=padding)+b
 
+def depthwise_pointwise_Conv(X, input_dim,output_dim,dw_name,dw_bn_name,pw_name,pw_bn_name,stride_size,kernel_size,padding,train_phase=True):
+    with tf.variable_scope(dw_name) as scope:
+        dW=weights([kernel_size,kernel_size,input_dim,1],'depthwise_kernel')
+    depthwise_conv=tf.nn.relu(BatchNorm(tf.nn.depthwise_conv2d(X,dW,name=dw_name,strides=[1,stride_size,stride_size,1],padding=padding),train_phase=train_phase,scope_bn=dw_bn_name))
+    pointwise_conv=conv(depthwise_conv,input_dim,output_dim,name=pw_name,stride_size=1,kernel_size=1,padding='VALID',wd=5e-4)
+    return tf.nn.relu(BatchNorm(pointwise_conv,train_phase=train_phase,scope_bn=pw_bn_name))
 
 
 
 def MaxPooling(X,ksize,stride,padding,name):
     return tf.nn.max_pool(X,ksize=ksize,strides=[1,stride,stride,1],padding=padding,name=name)
 
+def AvgPooling(X,ksize,stride,padding,name):
+    return tf.nn.avg_pool(X,ksize=ksize,strides=[1,stride,stride,1],padding=padding,name=name)
 def pooling_1x1(Input,input_dim,output_dim,padding,name,stride=2):
     W=weights([1,1,input_dim,output_dim],'pool_w')
     return tf.nn.conv2d(Input,filter=W,strides=[1,stride,stride,1],padding=padding,name=name)
@@ -32,32 +43,16 @@ def pooling_1x1(Input,input_dim,output_dim,padding,name,stride=2):
 def pooling_3x3(input,name,stride=2,kernel_size=3):
     return tf.nn.max_pool(input,[1,kernel_size,kernel_size,1],strides=[1,stride,stride,1],padding='SAME',name=name)
 
-# def BatchNorm(x, train_phase, scope_bn):
-#     with tf.variable_scope(scope_bn):
-#         beta=tf.get_variable(name='beta',shape=[x.shape[-1]],dtype=tf.float32,initializer=tf.constant_initializer(0),trainable=True)
-#         gamma=tf.get_variable(name='gamma',shape=[x.shape[-1]],dtype=tf.float32,initializer=tf.constant_initializer(1.0),trainable=True)
-#         axises = np.arange(len(x.shape) - 1)
-#         batch_mean, batch_var = tf.nn.moments(x, list(axises), name='moments') #计算均值和方差
-#         ema = tf.train.ExponentialMovingAverage(decay=0.9)
-#
-#         def mean_var_with_update():
-#             ema_apply_op = ema.apply([batch_mean, batch_var])  #让batch_mean和batch_var衰减 进入一个的新的值的时候之前的mean和var成为shadow variabel保留一部分的值衰减decay大小，新的保留一部分
-#             with tf.control_dependencies([ema_apply_op]):
-#                 return tf.identity(batch_mean), tf.identity(batch_var)  #identity  tensor 的复制
-#
-#         mean, var = tf.cond(train_phase, mean_var_with_update,
-#                             lambda: (ema.average(batch_mean), ema.average(batch_var))) #pred,true_fn,fasle_fn  average只是取出average里面的值
-#         normed = tf.nn.batch_normalization(x, mean, var, beta, gamma, 1e-3)
-#     return normed
 
 
 def BatchNorm(input,train_phase,scope_bn):
-    #暂且先不设置updates_collections=None,使用control_dependencies去控制更新参数，
     return batch_norm(input,decay=0.99,center=True,scale=True,is_training=train_phase,scope=scope_bn)
 
-def fc(input,input_dim,output_dim,name):
-    with tf.variable_scope(name):
+def fc(input,input_dim,output_dim,name,wd=0):
+    with tf.variable_scope(name) as scope:
         W=weights([input_dim,output_dim],'W')
+        weight_decay = tf.multiply(tf.nn.l2_loss(W),wd/2.)
+        tf.add_to_collection('weight_decay_loss',weight_decay)
         b=bias([output_dim],'b')
         return tf.matmul(input,W)+b
 

@@ -25,12 +25,20 @@ import random
 import numpy as np
 import cv2
 import time
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import PolynomialFeatures
-from sklearn.linear_model import LinearRegression
 def get_frames_data(filename, num_frames_per_clip=16,temporal_elastic_deformation=False,random_dropping=False,random_rotate_range=0,random_scale_range=0,random_shift_range=(0,0)):
-  ''' Given a directory containing extracted frames, return a video clip of
-  (num_frames_per_clip) consecutive frames as a list of np arrays '''
+    '''
+          Given a directory containing extracted frames, return a video clip of
+          (num_frames_per_clip) consecutive frames as a list of np arrays
+          filename: path like VIVA_Gesture_Root/03_01_01/
+          num_frames_per_clip: num of frames
+          temporal_elastic_deformation: if true, temporal elastic deformation will be performed.
+          random_dropping: if true, random pixels' value will be set to zero.
+          random_rotate_range: rotate angle will be in range(-random_rotate_range,random_rotate_range).
+          random_scale_range: scale will be in range(1-random_scale_range,1+random_scale_range)
+          random_shift_range: x in (-random_shift_range[0],random_shift_range[0]), y in (-random_shift_range[1],random_shift_range[1])
+          return (list of frames,indexes of extracted frames), frame is opened with PIL.Image
+    '''
+
   ret_arr = []
   s_index = 0
   for parent, dirnames, filenames in os.walk(filename):
@@ -38,15 +46,18 @@ def get_frames_data(filename, num_frames_per_clip=16,temporal_elastic_deformatio
       return [], s_index
     filenames = sorted(filenames)
     if temporal_elastic_deformation==True:
-      clf = Pipeline([('poly', PolynomialFeatures(degree=2)),  
-                    ('linear', LinearRegression(fit_intercept=False))])  
+      from sklearn.pipeline import Pipeline
+      from sklearn.preprocessing import PolynomialFeatures
+      from sklearn.linear_model import LinearRegression
+      clf = Pipeline([('poly', PolynomialFeatures(degree=2)),
+                    ('linear', LinearRegression(fit_intercept=False))])
       originLength = len(filenames)
-      M = originLength 
+      M = originLength
       n = random.normalvariate(mu=M,sigma=3)
       m = random.normalvariate(mu=n,sigma=4*(1-abs(n-M)/M))
       x = np.array([0,n,M-1])
       y = np.array([0,m,M-1])
-      clf.fit(x[:, np.newaxis], y)  
+      clf.fit(x[:, np.newaxis], y)
       x_test = np.arange(0,len(filenames),1)
       y_test = clf.predict(x_test[:, np.newaxis])
       y_test = [int(e) for e in y_test]
@@ -71,8 +82,8 @@ def get_frames_data(filename, num_frames_per_clip=16,temporal_elastic_deformatio
       # average index
       s_index = []
       originLength = len(filenames)
-      for i in range(num_frames_per_clip):
-        index = int(i/num_frames_per_clip*originLength)
+      for i in range(1,num_frames_per_clip+1,1):
+        index = int(i/num_frames_per_clip*originLength+0.5)
         if index>originLength-1:
           index=originLength-1
         s_index.append(index)
@@ -114,6 +125,18 @@ def get_frames_data(filename, num_frames_per_clip=16,temporal_elastic_deformatio
   return ret_arr, s_index
 
 def read_clip_and_label(rootdir,filename,batch_size, lines=None,start_pos=-1, num_frames_per_clip=16, crop_size=(112,112), shuffle=False,phase='TRAIN'):
+    '''
+    rootdir: dataset root
+    filename: label file path
+    batch_size: int
+    lines: [] if first call this function, the fixed list which will be used along one epoch.
+    start_pos: read start pos index
+    num_frames_per_clip: num of frames to generate
+    crop_size: img size
+    shuffle: if in the beginning of one epoch, shuffle=False
+    phase: 'TRAIN' to turn on data online augmentation, 'TEST' to turn off data online augmentation
+    return: data(nparr),label(nparr),next_batch_start,read_dirnames,valid_len of data, lines(sequences keeps the same along one epoch)
+    '''
   if lines==None:
     lines = open(filename,'r')
     lines = list(lines)
@@ -154,7 +177,7 @@ def read_clip_and_label(rootdir,filename,batch_size, lines=None,start_pos=-1, nu
     #  print("Loading a video clip from {}...".format(dirname))
     if phase == 'TRAIN':
       tmp_data, _ = get_frames_data(dirname, num_frames_per_clip,
-                                      temporal_elastic_deformation=True,
+                                      temporal_elastic_deformation=False,
                                       random_dropping=True,
                                       random_rotate_range=10,
                                       random_scale_range=0.3) # default open temporal elastic deformation
@@ -191,7 +214,7 @@ def read_clip_and_label(rootdir,filename,batch_size, lines=None,start_pos=-1, nu
 
 
 if __name__ == '__main__':
-  tmp_data, _ = get_frames_data(r'E:\dataset\VIVA_avi_group\VIVA_avi_part0\train\03_01_01', 8,temporal_elastic_deformation=False)
+  tmp_data, _ = get_frames_data(r'E:\dataset\VIVA_avi_group\VIVA_avi_part0\train\03_01_01', 16,temporal_elastic_deformation=True)
   for e in tmp_data:
     import cv2
     cv2.imshow('t',e)

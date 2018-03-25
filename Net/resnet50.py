@@ -1,6 +1,9 @@
-from Net.utils import *
+from utils import *
 def resnet50(X,output_dim=1024,train_phase=True,no_top=False):
-
+    '''
+        written by Wu Fan.
+        Modified function resnet50_BVLC which changed model definition name to keep the same as BVLC's model is shown below
+    '''
     conv1=conv(X,3,64,'conv1',stride_size=2,kernel_size=7,padding='SAME')
     #print('conv1',conv1)
     pooling1=pooling_3x3(conv1,'pooling1')
@@ -101,6 +104,15 @@ def resnet50(X,output_dim=1024,train_phase=True,no_top=False):
         return fc_out,block4
 
 def resnet50_BVLC(X,output_dim=1024,train_phase=True,no_top=False):
+    '''
+        resnet50_BVLC model definition
+        params:
+        X:              tf.placeholder
+        output_dim:     output dimension of the last fc layer
+        train_phase:    for Batch Normalization Layer
+        no_top:         if true, return average pooling layer,
+                        else, return fc layer.
+    '''
 
     conv1=conv(X,3,64,'conv1',stride_size=2,kernel_size=7,padding='SAME')
     conv1=tf.nn.relu(BatchNorm(conv1,train_phase,'bn_conv1'))
@@ -203,25 +215,38 @@ def resnet50_BVLC(X,output_dim=1024,train_phase=True,no_top=False):
         fc_out=fc(ave_pool,input_dim=2048,output_dim=output_dim,name='fc')
         return fc_out,block4
 
-def load_pretrained_model_ops(model='resnet50_weights_tf_dim_ordering_tf_kernels.h5'):
+def load_pretrained_resnet50_model_ops(model='resnet50_weights_tf_dim_ordering_tf_kernels.h5'):
+    '''
+        return operations of loading resnet model parameters.
+        using like: ops = load_pretrained_resnet50_model_ops()
+                    ...
+                    ...
+                    sess.run(ops)
+    '''
     import h5py
     file = h5py.File(model)
-    vars = tf.trainable_variables()
-    #print(vars)
+    vars = tf.global_variables()
     dct={}
     for e in vars:
+        print(e)
         dct[e.name]=e
     ops = []
     for key,value in file.items():
         if 'bn' in key:
-            for key,value in value.items():
-                key = key[:-2]
-                if key.endswith('gamma'):
-                    key = key[:-6]+'/gamma:0'
-                    ops.append(tf.assign(dct[key],value.value))
-                elif key.endswith('beta'):
-                    key = key[:-5]+'/beta:0'
-                    ops.append(tf.assign(dct[key], value.value))
+            for subkey,value in value.items():
+                subkey = subkey[:-2]
+                joinkey=''
+                if subkey.endswith('gamma'):
+                    joinkey = key+'/gamma:0'
+                elif subkey.endswith('beta'):
+                    joinkey = key+'/beta:0'
+                elif subkey.endswith('running_mean'):
+                    joinkey = key+'/moving_mean:0'
+                elif subkey.endswith('running_std'):
+                    joinkey = key+'/moving_variance:0'
+                if joinkey in dct:
+                    ops.append(tf.assign(dct[joinkey], value.value))
+
                 #print(key,value)
         elif 'conv'or 'fc' in key:
             for key,value in value.items():
@@ -230,11 +255,10 @@ def load_pretrained_model_ops(model='resnet50_weights_tf_dim_ordering_tf_kernels
                     continue
                 ops.append(tf.assign(dct[key],value.value))
                 #print(key,value)
-        elif 'branch' in key:
-            for key,value in value.items():
-                key = key[:-4] + '/' + key[-3:]
-                ops.append(tf.assign(dct[key], value.value))
-                #print(key,value)
     return ops
 
-
+def test():
+    X = tf.placeholder(dtype=tf.float32,shape=[10,224,224,3])
+    resnet50_BVLC(X,output_dim=1024,train_phase=True,no_top=False)
+    ops = load_pretrained_model_ops(model='resnet50_weights_tf_dim_ordering_tf_kernels.h5')
+    print(len(ops))
