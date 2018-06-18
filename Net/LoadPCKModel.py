@@ -4,8 +4,8 @@ import tensorflow as tf
 def load(sess,_weights,_bias, model_path):
     f = open(model_path,'rb')
     model = pickle.load(f
-            #,encoding='iso-8859-1')
-            )
+            ,encoding='iso-8859-1')
+            #)
     # (newChannel,oldChannel,Time,Height,Width)
     # transpose to
     # (Time,Height,Width,oldChannel,newChannel)

@@ -2,7 +2,10 @@ import cv2
 import threading
 import time
 import tensorflow as tf
+import sys
+sys.path.append('Net/')
 from Net import C3DModel
+from Net import CNNLSTM
 import numpy as np
 _videoBuffer = []
 _gestureId = -1
@@ -12,6 +15,10 @@ def _variable_on_cpu(name, shape, initializer):
     return var
 
 def VideoRealtimeProcess(videoBuffer=[],frameNum=16):
+    width = 171
+    height= 128
+    width=224
+    height=224
     cap = cv2.VideoCapture(0)
     while True:
         ret, frame = cap.read()
@@ -20,16 +27,16 @@ def VideoRealtimeProcess(videoBuffer=[],frameNum=16):
         framecopy = frame.copy()
 
         grayimg = cv2.cvtColor(framecopy, cv2.COLOR_BGR2GRAY)
-        grayimg = cv2.resize(grayimg, (171, 128), interpolation=cv2.INTER_AREA)
+        grayimg = cv2.resize(grayimg, (width, height), interpolation=cv2.INTER_AREA)
         grad1 = cv2.Sobel(grayimg, cv2.CV_64F, 1, 0)
         grad1 = cv2.convertScaleAbs(grad1)
         grad2 = cv2.Sobel(grayimg, cv2.CV_64F, 0, 1)
         grad2 = cv2.convertScaleAbs(grad2)
         grad = cv2.addWeighted(grad1, 0.5, grad2, 0.5, 0)
-        input_arr = np.ones(shape=(3, 128, 171), dtype=np.uint8)
-        input_arr[0, :, :] = grayimg.reshape([1, 128, 171])
-        input_arr[1, :, :] = grad.reshape([1, 128, 171])
-        input_arr[2, :, :] = np.ones(shape=(1, 128, 171)) * 10
+        input_arr = np.ones(shape=(3, height, width), dtype=np.uint8)
+        input_arr[0, :, :] = grayimg.reshape([1, height, width])
+        input_arr[1, :, :] = grad.reshape([1, height, width])
+        input_arr[2, :, :] = input_arr[0,:,:]
         input_arr = input_arr.transpose([1,2,0])
         if cv2.waitKey(1) and 0xFF==ord('q'):
             return
@@ -87,15 +94,21 @@ def CreateInferenceModelWithNN():
             probs = tf.nn.softmax(logits)
     return _X,probs
 
+
+
 def GetGestureFromVideo(videoBuffer=[],frameNum=16):
     global _gestureId
-    _X,probs = CreateInferenceModelWithNN()
-    top2 = tf.nn.top_k(probs,2)
+    _X,predict = CNNLSTM.inference_resnet_lstm(batchsize=1,
+            time_steps=6,
+            hidden_size=150,
+            classes=19,
+            loss='softmax_loss',
+            train_phase=False)
     sess = tf.Session()
     saver = tf.train.Saver()
     init = tf.initialize_all_variables()
     sess.run(init)
-    saver.restore(sess,'./models/c3d_ucf_model-66000')
+    saver.restore(sess,'./models_lstm/models0/resnet50_lstm_model_best')
 
     while True:
         if cv2.waitKey(1) and 0xFF==ord('q'):
@@ -105,32 +118,31 @@ def GetGestureFromVideo(videoBuffer=[],frameNum=16):
         start_time = time.time()
         videoSeqs = []
         if len(videoBuffer)>=frameNum:
-            for i in range(frameNum):
-                index = int(i*1.0*len(videoBuffer)/frameNum)
+            for i in range(6):
+                index = int(i*1.0*len(videoBuffer)/6)
                 if index>=len(videoBuffer):
                     index = len(videoBuffer)-1
                 videoSeqs.append(videoBuffer[index])
         videoArr = np.array(videoSeqs,dtype=np.float32)
-        videoArr = videoArr.reshape([1,16,128,171,3])
+        videoArr = videoArr.reshape([-1,CNNLSTM.HEIGHT,CNNLSTM.WIDTH,CNNLSTM.CHANNELS])
         videoArr-=128
         videoArr/=128.0
-        top2values,top2indices = sess.run(top2,feed_dict={
+        predicts = sess.run(predict,feed_dict={
                     _X: videoArr})
-        if top2values[0,0]-top2values[0,1]>0.5:
-            _gestureId=top2indices[0,0]
-        else:
-            _gestureId=-1
+
+        print(predicts)
+        _gestureId = predicts
 
         print('Judge %.2f  per time.'%(time.time()-start_time))
     sess.close()
 
 def Main():
     global _videoBuffer
-    videoIOThread = threading.Thread(target=VideoRealtimeProcess,args=(_videoBuffer,16))
+    videoIOThread = threading.Thread(target=VideoRealtimeProcess,args=(_videoBuffer,32))
     videoIOThread.start()
     showThread = threading.Thread(target=WindowsRealtimeShow)
     showThread.start()
-    processThread = threading.Thread(target=GetGestureFromVideo,args=(_videoBuffer,16))
+    processThread = threading.Thread(target=GetGestureFromVideo,args=(_videoBuffer,32))
     processThread.start()
 
 

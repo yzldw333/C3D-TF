@@ -82,8 +82,115 @@ def inference_mobilenet_lstm(batchsize,time_steps=4,hidden_size=50,classes=19,lo
     accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
     return X,Y,endpoints,features,predict,mean_loss,accuracy
 
+def inference_attention_mobilenet_lstm(batchsize,time_steps=4,hidden_size=50,classes=19,loss='focal_loss',train_phase=True):
+    # in X, batchsize = origin_batchsize*time_step
+    X = tf.placeholder(dtype=tf.float32,shape=[None,HEIGHT,WIDTH,CHANNELS],name="input")
+    Y = tf.placeholder(dtype=tf.int64,shape=[None],name="label")
+    #lr = tf.placeholder(dtype=tf.float32,name="learning_rate")
+
+    endpoints = mobilenet(X,output_dim=hidden_size,train_phase=train_phase,no_top=False)
+    features = endpoints[-1]
+    features = tf.reshape(features,[-1,time_steps,hidden_size])
+    endpoints.append(features)
+    print(features.shape)
+    # last node's output
+    output = lstm(x=features,hidden_size=hidden_size,batchsize=batchsize)
+    #output = output[:,-1]
+    #logits = fc(output,input_dim=hidden_size,output_dim=classes,name="fc_logits")
+    output = tf.reshape(output,[-1,time_steps*hidden_size])
+    attention = tf.nn.sigmoid(fc(output,input_dim=hidden_size*time_steps,output_dim=hidden_size*time_steps,name='att'))
+    output =  tf.multiply(output,attention)
+
+    logits = fc(output,input_dim=hidden_size*time_steps,output_dim=classes,name="fc_logits")
+    if loss=='focal_loss':
+        import tensorflow.contrib.slim as slim
+        one_hot_labels = slim.one_hot_encoding(Y, classes)
+        mean_loss = focal_loss(one_hot_labels,logits,alpha=0.25,gamma=2.0,name='focal_loss')
+    else:
+        loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits,labels=Y,name='hard_loss')
+        mean_loss = tf.reduce_mean(loss)
+
+    predict = tf.nn.softmax(logits,name="predict")
+    predict = tf.argmax(predict, 1)
+
+    correct_pred = tf.equal(predict, Y)
+    accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
+    return X,Y,endpoints,features,predict,mean_loss,accuracy
+
+def inference_channel_attention_mobilenet_lstm(batchsize,time_steps=4,hidden_size=50,classes=19,loss='focal_loss',train_phase=True):
+    # in X, batchsize = origin_batchsize*time_step
+    X = tf.placeholder(dtype=tf.float32,shape=[None,HEIGHT,WIDTH,CHANNELS],name="input")
+    Y = tf.placeholder(dtype=tf.int64,shape=[None],name="label")
+    #lr = tf.placeholder(dtype=tf.float32,name="learning_rate")
+
+    endpoints = mobilenet(X,output_dim=hidden_size,train_phase=train_phase,no_top=False)
+    features = endpoints[-1]
+    features = tf.reshape(features,[-1,time_steps,hidden_size])
+    endpoints.append(features)
+    print(features.shape)
+    # last node's output
+    output = lstm(x=features,hidden_size=hidden_size,batchsize=batchsize)
+    #output = output[:,-1]
+    #logits = fc(output,input_dim=hidden_size,output_dim=classes,name="fc_logits")
+    output = tf.reshape(output,[-1,time_steps,hidden_size,1])
+    output_trans = tf.transpose(output,[0,2,3,1])
+    avg = tf.nn.avg_pool(output_trans,ksize=[1,hidden_size,1,1],strides=[1,hidden_size,1,1],padding='VALID',name='channelattAvg')
+    attconv1 = conv(avg,time_steps,time_steps,name='attconv1',kernel_size=1,stride_size=1,padding='VALID',wd=0)
+    attconv2 = conv(attconv1,time_steps,time_steps,name='attconv2',kernel_size=1,stride_size=1,padding='VALID',wd=0)
+    attention = tf.nn.softmax(attconv2)
+    attention = tf.reshape(attention,[-1,time_steps,1,1])
+
+    output = tf.multiply(output,attention)
+    output = tf.reshape(output,[-1,time_steps*hidden_size])
+
+    logits = fc(output,input_dim=hidden_size*time_steps,output_dim=classes,name="fc_logits")
+    if loss=='focal_loss':
+        import tensorflow.contrib.slim as slim
+        one_hot_labels = slim.one_hot_encoding(Y, classes)
+        mean_loss = focal_loss(one_hot_labels,logits,alpha=0.25,gamma=2.0,name='focal_loss')
+    else:
+        loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits,labels=Y,name='hard_loss')
+        mean_loss = tf.reduce_mean(loss)
+
+    predict = tf.nn.softmax(logits,name="predict")
+    predict = tf.argmax(predict, 1)
+
+    correct_pred = tf.equal(predict, Y)
+    accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
+    return X,Y,endpoints,features,predict,mean_loss,accuracy
 
 def inference_resnet_lstm(batchsize,time_steps=4,hidden_size=50,classes=19,loss='focal_loss',train_phase=True):
+    # in X, batchsize = origin_batchsize*time_step
+    X = tf.placeholder(dtype=tf.float32,shape=[None,HEIGHT,WIDTH,CHANNELS],name="input")
+    Y = tf.placeholder(dtype=tf.int64,shape=[None],name="label")
+    #lr = tf.placeholder(dtype=tf.float32,name="learning_rate")
+    features,block4 = resnet50_BVLC(X,output_dim=hidden_size,no_top=False,train_phase=train_phase)
+    features = tf.reshape(features,[-1,time_steps,hidden_size])
+    print(features.shape)
+    # last node's output
+    output = lstm(x=features,hidden_size=hidden_size,batchsize=batchsize)
+    #output = output[:,-1]
+    #logits = fc(output,input_dim=hidden_size,output_dim=classes,name="fc_logits")
+    output = tf.reshape(output,[-1,time_steps*hidden_size])
+    logits = fc(output,input_dim=hidden_size*time_steps,output_dim=classes,name="fc_logits")
+    predict = tf.nn.softmax(logits,name="predict")
+    predict = tf.argmax(predict, 1)
+    if train_phase==False:
+        return X,predict 
+    if loss=='focal_loss':
+        import tensorflow.contrib.slim as slim
+        one_hot_labels = slim.one_hot_encoding(Y, classes)
+        mean_loss = focal_loss(one_hot_labels,logits,alpha=0.25,gamma=2.0,name='focal_loss')
+    else:
+        loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits,labels=Y,name='hard_loss')
+        mean_loss = tf.reduce_mean(loss)
+
+    correct_pred = tf.equal(predict, Y)
+    accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
+    return X,Y,predict,mean_loss,accuracy
+
+
+def inference_c3d_lstm(batchsize,time_steps=4,hidden_size=50,classes=19,loss='focal_loss',train_phase=True):
     # in X, batchsize = origin_batchsize*time_step
     X = tf.placeholder(dtype=tf.float32,shape=[None,HEIGHT,WIDTH,CHANNELS],name="input")
     Y = tf.placeholder(dtype=tf.int64,shape=[None],name="label")
@@ -110,5 +217,3 @@ def inference_resnet_lstm(batchsize,time_steps=4,hidden_size=50,classes=19,loss=
     correct_pred = tf.equal(predict, Y)
     accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
     return X,Y,predict,mean_loss,accuracy
-
-

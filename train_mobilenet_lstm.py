@@ -8,13 +8,13 @@ import input_data
 import tensorflow as tf
 import numpy as np,time,os
 # predefine
-model_save_dir="./models"
+model_save_dir="./modelsmobile2"
 use_pretrained_model=True
-batchsize=48
+batchsize=24
 time_steps=6
 hidden_size=150
 classes=19
-max_steps=40000
+max_steps=30000
 
 
 def train(train_root,train_txt,valid_root,valid_txt):
@@ -28,7 +28,7 @@ def train(train_root,train_txt,valid_root,valid_txt):
     start_steps=0
   graph = tf.Graph()
   with graph.as_default():
-    X,Y,endpoints,features,predict,loss,accuracy = inference_mobilenet_lstm(batchsize=batchsize,
+    X,Y,endpoints,features,predict,loss,accuracy = inference_attention_mobilenet_lstm(batchsize=batchsize,
             time_steps=time_steps,
             hidden_size=hidden_size,
             classes=classes,
@@ -90,8 +90,8 @@ def train(train_root,train_txt,valid_root,valid_txt):
                             )
             train_images = train_images.reshape([-1,CNNLSTM.HEIGHT,CNNLSTM.WIDTH,CNNLSTM.CHANNELS])
             endprocess_time = time.time()
-            preprocess_time = ((endprocess_time-startprocess_time)/(batchsize*1))
-            print("preprocess per time :%f"%preprocess_time)
+            #preprocess_time = ((endprocess_time-startprocess_time)/(batchsize*1.0))
+            #print("preprocess per time :%f"%preprocess_time)
             #endpoints_res = sess.run(endpoints, feed_dict={
             #                X: train_images,
             #                Y: train_labels
@@ -183,6 +183,6 @@ def train(train_root,train_txt,valid_root,valid_txt):
 
 
 if __name__ == '__main__':
-    train(train_root='../VIVA_avi_group/VIVA_avi_part7/train',train_txt='../VIVA_avi_group/VIVA_avi_part7/gen_train_shuffle.txt',
-        valid_root='../VIVA_avi_group/VIVA_avi_part7/val',valid_txt='../VIVA_avi_group/VIVA_avi_part7/val.txt')
+    train(train_root='E:/dataset/VIVA_avi_group/VIVA_avi_part2/train',train_txt='E:/dataset/VIVA_avi_group/VIVA_avi_part2/gen_train_shuffle.txt',
+        valid_root='E:/dataset/VIVA_avi_group/VIVA_avi_part2/val',valid_txt='E:/dataset/VIVA_avi_group/VIVA_avi_part2/val.txt')
 
